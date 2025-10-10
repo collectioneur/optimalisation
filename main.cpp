@@ -22,7 +22,7 @@ int main()
 {
 	try
 	{
-		lab0();
+		lab1();
 	}
 	catch (string EX_INFO)
 	{
@@ -68,7 +68,10 @@ void lab0()
 
 void lab1()
 {
-
+	// Expansion
+	double* p = expansion(ff1, 90, 1, 1.2, 1000);
+	cout << "Wynik rozszerzenia: " << p[0] << ", " << p[1] << endl;
+	delete[] p;
 }
 
 void lab2()

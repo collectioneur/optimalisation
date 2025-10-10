@@ -2,30 +2,30 @@
 
 solution MC(matrix(*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, double epsilon, int Nmax, matrix ud1, matrix ud2)
 {
-	// Zmienne wejœciowe:
-	// ff - wskaŸnik do funkcji celu
+	// Zmienne wejï¿½ciowe:
+	// ff - wskaï¿½nik do funkcji celu
 	// N - liczba zmiennych funkcji celu
-	// lb, ub - dolne i górne ograniczenie
-	// epslion - zak³¹dana dok³adnoœæ rozwi¹zania
-	// Nmax - maksymalna liczba wywo³añ funkcji celu
+	// lb, ub - dolne i gï¿½rne ograniczenie
+	// epslion - zakï¿½ï¿½dana dokï¿½adnoï¿½ï¿½ rozwiï¿½zania
+	// Nmax - maksymalna liczba wywoï¿½aï¿½ funkcji celu
 	// ud1, ud2 - user data
 	try
 	{
 		solution Xopt;
 		while (true)
 		{
-			Xopt = rand_mat(N);									// losujemy macierz Nx1 stosuj¹c rozk³ad jednostajny na przedziale [0,1]
+			Xopt = rand_mat(N);									// losujemy macierz Nx1 stosujï¿½c rozkï¿½ad jednostajny na przedziale [0,1]
 			for (int i = 0; i < N; ++i)
-				Xopt.x(i) = (ub(i) - lb(i)) * Xopt.x(i) + lb(i);// przeskalowywujemy rozwi¹zanie do przedzia³u [lb, ub]
-			Xopt.fit_fun(ff, ud1, ud2);							// obliczmy wartoœæ funkcji celu
+				Xopt.x(i) = (ub(i) - lb(i)) * Xopt.x(i) + lb(i);// przeskalowywujemy rozwiï¿½zanie do przedziaï¿½u [lb, ub]
+			Xopt.fit_fun(ff, ud1, ud2);							// obliczmy wartoï¿½ï¿½ funkcji celu
 			if (Xopt.y < epsilon)								// sprawdzmy 1. kryterium stopu
 			{
-				Xopt.flag = 1;									// flaga = 1 ozancza znalezienie rozwi¹zanie z zadan¹ dok³adnoœci¹
+				Xopt.flag = 1;									// flaga = 1 ozancza znalezienie rozwiï¿½zanie z zadanï¿½ dokï¿½adnoï¿½ciï¿½
 				break;
 			}
 			if (solution::f_calls > Nmax)						// sprawdzmy 2. kryterium stopu
 			{
-				Xopt.flag = 0;									// flaga = 0 ozancza przekroczenie maksymalne liczby wywo³añ funkcji celu
+				Xopt.flag = 0;									// flaga = 0 ozancza przekroczenie maksymalne liczby wywoï¿½aï¿½ funkcji celu
 				break;
 			}
 		}
@@ -37,12 +37,52 @@ solution MC(matrix(*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, do
 	}
 }
 
-double* expansion(matrix(*ff)(matrix, matrix, matrix), double x0, double d, double alpha, int Nmax, matrix ud1, matrix ud2)
+double* expansion(double(*ff)(double), double x0, double d, double alpha, int Nmax, matrix ud1, matrix ud2)
 {
 	try
 	{
 		double* p = new double[2] { 0, 0 };
 		//Tu wpisz kod funkcji
+
+		int i = 0;
+		vector<double> X = { x0, x0 + d };
+
+		double f0 = ff(X[0]);
+		double f1 = ff(X[1]);
+
+		if (f1 == f0) {
+			p[0] = X[0];
+			p[1] = X[1];
+			return p;
+		}
+
+		if (f1 > f0) {
+			d = -d;
+			X[1] = X[0] + d;
+			f1 = ff(X[1]);
+			if (f1 >= f0) {
+				p[0] = X[1];
+				p[1] = X[0] - d;
+				return p;
+			}
+		}
+
+		while (f1 < f0) {
+			if (i >= Nmax) {
+				throw ("Przekroczono maksymalna liczbe iteracji");
+			}
+			
+			i += 1;
+			X.push_back(X[0] + pow(alpha, i) * d);
+
+			f0 = f1;
+			f1 = ff(X[i + 1]);
+		}
+
+		if (d > 0)
+			p[0] = X[i - 1], p[1] = X[i + 1];
+		else
+			p[0] = X[i + 1], p[1] = X[i - 1];
 
 		return p;
 	}
