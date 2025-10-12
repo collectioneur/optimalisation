@@ -98,7 +98,7 @@ double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1,
 	try
 	{
 		std::vector<unsigned long long> F = {0, 1};
-
+		//calculate fibonacci numbers based on a, b and epsilon 
 		while (F.back() < static_cast<unsigned long long>((b - a) / epsilon))
 			F.push_back(F[F.size() - 1] + F[F.size() - 2]);
 		int N = static_cast<int>(F.size()) - 1;
@@ -110,7 +110,7 @@ double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1,
 		double f1 = ff(x1);
 		double f2 = ff(x2);
 
-		//Tu wpisz kod funkcji
+		//minimize range [a, b] using fibonacci numbers
 		for (int k = 1; k <= N - 2; ++k)
     	{
 			if (f1 > f2)
@@ -130,10 +130,8 @@ double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1,
 				f1 = ff(x1);
 			}
 		}
-
-    	double xmin_val = (x1 + x2) / 2.0;
-		double* xmin = new double(xmin_val);
-		return xmin;
+		double* xmin_val = new double((x1 + x2) / 2.0);
+		return xmin_val;
 		}
 		catch (string ex_info)
 		{
