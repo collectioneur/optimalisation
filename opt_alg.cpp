@@ -1,4 +1,5 @@
 #include"opt_alg.h"
+#include <vector>
 
 solution MC(matrix(*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, double epsilon, int Nmax, matrix ud1, matrix ud2)
 {
@@ -92,19 +93,52 @@ double* expansion(double(*ff)(double), double x0, double d, double alpha, int Nm
 	}
 }
 
-solution fib(matrix(*ff)(matrix, matrix, matrix), double a, double b, double epsilon, matrix ud1, matrix ud2)
+double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1, matrix ud2)
 {
 	try
 	{
-		solution Xopt;
-		//Tu wpisz kod funkcji
+		std::vector<unsigned long long> F = {0, 1};
 
-		return Xopt;
-	}
-	catch (string ex_info)
-	{
-		throw ("solution fib(...):\n" + ex_info);
-	}
+		while (F.back() < static_cast<unsigned long long>((b - a) / epsilon))
+			F.push_back(F[F.size() - 1] + F[F.size() - 2]);
+		int N = static_cast<int>(F.size()) - 1;
+
+
+		double x1 = a + (double)F[N - 2] / F[N] * (b - a);
+		double x2 = a + (double)F[N - 1] / F[N] * (b - a);
+
+		double f1 = ff(x1);
+		double f2 = ff(x2);
+
+		//Tu wpisz kod funkcji
+		for (int k = 1; k <= N - 2; ++k)
+    	{
+			if (f1 > f2)
+			{
+				a = x1;
+				x1 = x2;
+				f1 = f2;
+				x2 = a + (double)F[N - k - 1] / F[N - k] * (b - a);
+				f2 = ff(x2);
+			}
+			else
+			{
+				b = x2;
+				x2 = x1;
+				f2 = f1;
+				x1 = a + (double)F[N - k - 2] / F[N - k] * (b - a);
+				f1 = ff(x1);
+			}
+		}
+
+    	double xmin_val = (x1 + x2) / 2.0;
+		double* xmin = new double(xmin_val);
+		return xmin;
+		}
+		catch (string ex_info)
+		{
+			throw ("double* fib(...):\n" + ex_info);
+		}
 
 }
 

@@ -68,10 +68,17 @@ void lab0()
 
 void lab1()
 {
+	double epsilon = 1e-2;	
 	// Expansion
 	double* p = expansion(ff1, 90, 1, 1.2, 1000);
 	cout << "Wynik rozszerzenia: " << p[0] << ", " << p[1] << endl;
+	
+
+	double* fibo = fib(ff1, p[0], p[1],epsilon);
+	cout<< "x_min fibo method: "<< *fibo <<endl;
+	cout<< "f(x_min) fibo method: "<< ff1(*fibo) <<endl;
 	delete[] p;
+	delete fibo;
 }
 
 void lab2()
