@@ -41,3 +41,11 @@ double ff1(double x)				// funkcja celu dla przypadku testowego 1D
 {
 	return -cos(0.1 * x) * exp(-pow(0.1 * x - 2 * M_PI, 2)) + 0.002 * pow(0.1 * x, 2);
 }
+
+matrix ff1T(matrix x, matrix ud1, matrix ud2)		
+{
+	matrix y;
+	double val = x(0);	
+	y = -cos(0.1 * val) * exp(-pow(0.1 * val - 2 * M_PI, 2)) + 0.002 * pow(0.1 * val, 2);
+	return y;
+}
