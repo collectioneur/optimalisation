@@ -49,3 +49,4 @@ matrix ff1T(matrix x, matrix ud1, matrix ud2)
 	y = -cos(0.1 * val) * exp(-pow(0.1 * val - 2 * M_PI, 2)) + 0.002 * pow(0.1 * val, 2);
 	return y;
 }
+//
