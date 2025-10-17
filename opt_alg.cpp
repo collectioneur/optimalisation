@@ -1,4 +1,7 @@
 #include"opt_alg.h"
+#include <vector>
+#include <cmath>
+#include <limits>
 
 solution MC(matrix(*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, double epsilon, int Nmax, matrix ud1, matrix ud2)
 {
@@ -92,18 +95,49 @@ double* expansion(double(*ff)(double), double x0, double d, double alpha, int Nm
 	}
 }
 
-solution fib(matrix(*ff)(matrix, matrix, matrix), double a, double b, double epsilon, matrix ud1, matrix ud2)
+double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1, matrix ud2)
 {
 	try
 	{
-		solution Xopt;
-		//Tu wpisz kod funkcji
+		std::vector<unsigned long long> F = {0, 1};
+		//calculate fibonacci numbers based on a, b and epsilon 
+		while (F.back() < static_cast<unsigned long long>((b - a) / epsilon))
+			F.push_back(F[F.size() - 1] + F[F.size() - 2]);
+		int N = static_cast<int>(F.size()) - 1;
 
-		return Xopt;
+
+		double x1 = a + (double)F[N - 2] / F[N] * (b - a);
+		double x2 = a + (double)F[N - 1] / F[N] * (b - a);
+
+		double f1 = ff(x1);
+		double f2 = ff(x2);
+
+		//minimize range [a, b] using fibonacci numbers
+		for (int k = 1; k <= N - 2; ++k)
+    	{
+			if (f1 > f2)
+			{
+				a = x1;
+				x1 = x2;
+				f1 = f2;
+				x2 = a + (double)F[N - k - 1] / F[N - k] * (b - a);
+				f2 = ff(x2);
+			}
+			else
+			{
+				b = x2;
+				x2 = x1;
+				f2 = f1;
+				x1 = a + (double)F[N - k - 2] / F[N - k] * (b - a);
+				f1 = ff(x1);
+			}
+		}
+		double* xmin_val = new double((x1 + x2) / 2.0);
+		return xmin_val;
 	}
 	catch (string ex_info)
 	{
-		throw ("solution fib(...):\n" + ex_info);
+			throw ("double* fib(...):\n" + ex_info);
 	}
 
 }
@@ -113,8 +147,111 @@ solution lag(matrix(*ff)(matrix, matrix, matrix), double a, double b, double eps
 	try
 	{
 		solution Xopt;
-		//Tu wpisz kod funkcji
+		
 
+		int i = 0;
+		double a_i = a, b_i = b;
+		double c_i = (a + b) / 2.0;
+		double d_i = 0.0, d_prev = 0.0;
+		
+		if (!(a_i < c_i && c_i < b_i)) {
+			Xopt.flag = 0;
+			return Xopt;
+		}
+		
+		do {
+
+			matrix x_a(1, 1), x_b(1, 1), x_c(1, 1);
+			x_a(0) = a_i;
+			x_b(0) = b_i;
+			x_c(0) = c_i;
+			
+			matrix f_a = ff(x_a, ud1, ud2);
+			matrix f_b = ff(x_b, ud1, ud2);
+			matrix f_c = ff(x_c, ud1, ud2);
+			
+			double l = f_a(0) * (b_i * b_i - c_i * c_i) + 
+					   f_b(0) * (c_i * c_i - a_i * a_i) + 
+					   f_c(0) * (a_i * a_i - b_i * b_i);
+			
+			double m = f_a(0) * (b_i - c_i) + 
+					   f_b(0) * (c_i - a_i) + 
+					   f_c(0) * (a_i - b_i);
+			
+			if (m <= 0) {
+				Xopt.flag = 0;
+				return Xopt;
+			}
+			
+			d_prev = d_i;
+			
+
+			d_i = 0.5 * l / m;
+			
+			if (a_i < d_i && d_i < c_i) {
+				matrix x_d(1, 1);
+				x_d(0) = d_i;
+				matrix f_d = ff(x_d, ud1, ud2);
+				
+				if (f_d(0) < f_c(0)) {
+					double new_a = a_i;
+					double new_c = d_i;
+					double new_b = c_i;
+					
+					a_i = new_a;
+					c_i = new_c;
+					b_i = new_b;
+				} else {
+					double new_a = d_i;
+					double new_c = c_i;
+					double new_b = b_i;
+					
+					a_i = new_a;
+					c_i = new_c;
+					b_i = new_b;
+				}
+			} else if (c_i < d_i && d_i < b_i) {
+				matrix x_d(1, 1);
+				x_d(0) = d_i;
+				matrix f_d = ff(x_d, ud1, ud2);
+				
+				if (f_d(0) < f_c(0)) {
+					double new_a = c_i;
+					double new_c = d_i;
+					double new_b = b_i;
+					
+					a_i = new_a;
+					c_i = new_c;
+					b_i = new_b;
+				} else {
+					double new_a = a_i;
+					double new_c = c_i;
+					double new_b = d_i;
+					
+					a_i = new_a;
+					c_i = new_c;
+					b_i = new_b;
+				}
+			} else {
+				Xopt.flag = 0;
+				return Xopt;
+			}
+			
+			i++;
+			
+			if (solution::f_calls > Nmax) {
+				Xopt.flag = 0;
+				return Xopt;
+			}
+			
+		} while ((b_i - a_i) >= epsilon && (i == 1 || std::fabs(d_i - d_prev) >= gamma)); 
+		
+		
+		Xopt.x = matrix(1, 1);
+		Xopt.x(0) = d_i;
+		Xopt.fit_fun(ff, ud1, ud2);
+		Xopt.flag = 1; 
+		
 		return Xopt;
 	}
 	catch (string ex_info)
