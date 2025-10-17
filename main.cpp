@@ -87,7 +87,7 @@ void lab1()
 
 void lab2()
 {
-	cout << solve_ode(l2_dvdt, 0, 0.1, 10, matrix(3, new double[3]{5, 1, 20.0}), matrix(1, new double[1]{3.0}))[0] << endl;
+	cout << solve_ode(l2_dvdt, 0, 1,500, matrix(3, new double[3]{5, 1, 20.0}), matrix(1, new double[1]{0.005}))[1] << endl;
 
 }
 
