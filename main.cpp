@@ -87,21 +87,11 @@ void lab1()
 
 void lab2()
 {
-	double P_A = 2;
-	double V_A = 5;
-	double P_B = 1;
-	double V_B = 1;
-	double T_A = 95;
-	double T_B = 20;
-	double T_B_in = 20;
-	double F_B_in = 0.01; // m3/s
-	double Db = 36.5665;
 
-	double a = 0.98;
-	double b = 0.63;
-	double g = 9.81;
 
-	
+	matrix Y0 = matrix(3, 1);
+	matrix dY = matrix(3, 1);
+
 }
 
 void lab3()
