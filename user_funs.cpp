@@ -52,7 +52,7 @@ matrix ff1T(matrix x, matrix ud1, matrix ud2)
 //
 
 // Lab 2
-matrix l2_dvdt(matrix Y, double D_a)
+matrix l2_dvdt(double t,matrix Y, matrix ud1, matrix ud2)
 {
 	double P_A = 2;
 	double V_A = Y(0);
@@ -62,6 +62,7 @@ matrix l2_dvdt(matrix Y, double D_a)
 	double T_B = Y(2);
 	double T_B_in = 20;
 	double F_B_in = 0.01; // m3/s
+	double D_a = ud1(0);
 	double D_b = 0.00365665;
 
 	double a = 0.98;

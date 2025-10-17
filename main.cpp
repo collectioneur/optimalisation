@@ -22,7 +22,7 @@ int main()
 {
 	try
 	{
-		lab1();
+		lab2();
 	}
 	catch (string EX_INFO)
 	{
@@ -87,10 +87,7 @@ void lab1()
 
 void lab2()
 {
-
-
-	matrix Y0 = matrix(3, 1);
-	matrix dY = matrix(3, 1);
+	cout << solve_ode(l2_dvdt, 0, 0.1, 10, matrix(3, new double[3]{5, 1, 20.0}), matrix(1, new double[1]{3.0}))[0] << endl;
 
 }
 
