@@ -42,7 +42,7 @@ solution MC(matrix(*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, do
 
 int expansion_calls = 0; 
 
-double* expansion(double(*ff)(double), double x0, double d, double alpha, int Nmax, matrix ud1, matrix ud2)
+double* expansion(double(*ff)(double), double x0, double d, double alpha, int Nmax)
 {
     try {
         double* p = new double[2]{0, 0};
@@ -95,7 +95,7 @@ double* expansion(double(*ff)(double), double x0, double d, double alpha, int Nm
 
 int fib_calls = 0;
 
-double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1, matrix ud2)
+double* fib(double(*ff)(double), double a, double b, double epsilon)
 {
     try {
         std::vector<unsigned long long> F = {0, 1};
@@ -133,71 +133,65 @@ double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1,
     }
 }
 
-
 int lag_calls = 0;
-solution lag(matrix(*ff)(matrix, matrix, matrix), double a, double b, double epsilon, double gamma, int Nmax, matrix ud1, matrix ud2)
+double* lag(double(*ff)(double), double a, double b, double epsilon, double gamma, int Nmax)
 {
     try {
-        solution Xopt;
         lag_calls = 0;
         int i = 0;
         double a_i = a, b_i = b;
         double c_i = (a + b) / 2.0;
         double d_i = 0.0, d_prev = 0.0;
 
-        if (!(a_i < c_i && c_i < b_i)) {
-            Xopt.flag = 0;
-            return Xopt;
-        }
+        if (!(a_i < c_i && c_i < b_i))
+            throw string("Nieprawidlowy przedzial poczatkowy");
 
         do {
-            matrix x_a(1, 1), x_b(1, 1), x_c(1, 1);
-            x_a(0) = a_i;
-            x_b(0) = b_i;
-            x_c(0) = c_i;
+            double f_a = ff(a_i); lag_calls++;
+            double f_b = ff(b_i); lag_calls++;
+            double f_c = ff(c_i); lag_calls++;
 
-            matrix f_a = ff(x_a, ud1, ud2); lag_calls++;
-            matrix f_b = ff(x_b, ud1, ud2); lag_calls++;
-            matrix f_c = ff(x_c, ud1, ud2); lag_calls++;
+            double numerator = ((c_i - a_i) * (c_i - a_i)) * (f_c - f_b)
+                             - ((c_i - b_i) * (c_i - b_i)) * (f_c - f_a);
+            double denominator = 2.0 * ((c_i - a_i) * (f_c - f_b)
+                             - (c_i - b_i) * (f_c - f_a));
 
-            double l = f_a(0) * (b_i * b_i - c_i * c_i) +
-                       f_b(0) * (c_i * c_i - a_i * a_i) +
-                       f_c(0) * (a_i * a_i - b_i * b_i);
+            if (fabs(denominator) < 1e-12)
+                break;
 
-            double m = f_a(0) * (b_i - c_i) +
-                       f_b(0) * (c_i - a_i) +
-                       f_c(0) * (a_i - b_i);
-
-            if (m <= 0) break;
             d_prev = d_i;
-            d_i = 0.5 * l / m;
+            d_i = c_i - numerator / denominator;
+			
+            if (d_i <= a_i) d_i = a_i + 1e-8;
+            if (d_i >= b_i) d_i = b_i - 1e-8;
 
-            matrix x_d(1, 1);
-            x_d(0) = d_i;
-            matrix f_d = ff(x_d, ud1, ud2); lag_calls++;
+            double f_d = ff(d_i); lag_calls++;
 
             if (d_i < c_i) {
-                if (f_d(0) < f_c(0)) b_i = c_i;
+                if (f_d < f_c) b_i = c_i;
                 else a_i = d_i;
             } else {
-                if (f_d(0) < f_c(0)) a_i = c_i;
+                if (f_d < f_c) a_i = c_i;
                 else b_i = d_i;
             }
 
             c_i = d_i;
             i++;
-        } while ((b_i - a_i) >= epsilon && i < Nmax);
 
-        Xopt.x = matrix(1, 1);
-        Xopt.x(0) = (a_i + b_i) / 2.0;
-        Xopt.fit_fun(ff, ud1, ud2);
-        Xopt.flag = 1;
-        return Xopt;
+            if (lag_calls > Nmax)
+                throw string("Przekroczono maksymalna liczbe wywolan funkcji celu (Nmax)");
+
+        } while ((b_i - a_i) >= epsilon && (i == 1 || fabs(d_i - d_prev) >= gamma));
+
+        double* result = new double(d_i);
+        return result;
     }
     catch (string ex_info) {
-        throw ("solution lag(...):\n" + ex_info);
+        throw ("double* lag(...):\n" + ex_info);
     }
 }
+
+
 
 
 solution HJ(matrix(*ff)(matrix, matrix, matrix), matrix x0, double s, double alpha, double epsilon, int Nmax, matrix ud1, matrix ud2)

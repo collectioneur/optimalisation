@@ -23,7 +23,7 @@ int main()
 {
 	try
 	{
-		lab1_no_exp();
+		lab1();
 	}
 	catch (string EX_INFO)
 	{
@@ -67,7 +67,6 @@ void lab0()
 	Y[1].~matrix();
 }
 
-
 void lab1() {
     ofstream out("wyniki_lab1.csv");
     out << "i;alpha;x0;a;b;it_exp;x_fib;f_fib;it_fib;min_fib;x_lag;f_lag;it_lag;min_lag\n";
@@ -86,25 +85,26 @@ void lab1() {
 
             //metoda ekspansji
             double* p = expansion(ff1, x0, 1.0, alpha, Nmax);
-            extern int expansion_calls;  
+            extern int expansion_calls;
             int iter_exp = expansion_calls;
 
             //metoda Fibonacciego
             double* fib_res = fib(ff1, p[0], p[1], eps);
-            extern int fib_calls;        
+            extern int fib_calls;
             int iter_fib = fib_calls;
             double f_fib = ff1(*fib_res);
 
-            //metoda Lagrange'a
-            solution lag_res = lag(ff1T, p[0], p[1], eps, 1e-5, Nmax);
-            extern int lag_calls;        
+            //metoda Lagrange’a (nowa wersja double*)
+            double* lag_res = lag(ff1, p[0], p[1], eps, 1e-5, Nmax);
+            extern int lag_calls;
             int iter_lag = lag_calls;
-            double f_lag = ff1T(lag_res.x, NAN, NAN)(0);
+            double f_lag = ff1(*lag_res);
 
+            //klasyfikacja minimum 
             string min_fib_type = (fabs(f_fib + 0.9211) < 1e-3) ? "globalne" : "lokalne";
             string min_lag_type = (fabs(f_lag + 0.9211) < 1e-3) ? "globalne" : "lokalne";
 
-			//zapis do csv
+            //zapis do csv
             out << i + 1 << ";"
                 << alpha << ";"
                 << x0 << ";"
@@ -115,13 +115,14 @@ void lab1() {
                 << f_fib << ";"
                 << iter_fib << ";"
                 << min_fib_type << ";"
-                << lag_res.x(0) << ";"
+                << *lag_res << ";"
                 << f_lag << ";"
                 << iter_lag << ";"
                 << min_lag_type << "\n";
 
             delete[] p;
             delete fib_res;
+            delete lag_res;
         }
     }
 
@@ -137,39 +138,52 @@ void lab1_no_exp() {
     double a = -100;
     double b = 100;
 
-    // metoda Fibonacciego
+    //metoda Fibonacciego
     double* fib_res = fib(ff1, a, b, eps);
     extern int fib_calls;
     int iter_fib = fib_calls;
     double f_fib = ff1(*fib_res);
 
-    // metoda Lagrange'a
-    solution lag_res = lag(ff1T, a, b, eps, 1e-5, Nmax);
+    //metoda Lagrange’a (wersja double*)
+    double* lag_res = lag(ff1, a, b, eps, 1e-5, Nmax);
     extern int lag_calls;
     int iter_lag = lag_calls;
-    double f_lag = ff1T(lag_res.x, NAN, NAN)(0);
+    double f_lag = ff1(*lag_res);
 
+    //klasyfikacja minimum
     string min_fib_type = (fabs(f_fib + 0.9211) < 1e-3) ? "globalne" : "lokalne";
     string min_lag_type = (fabs(f_lag + 0.9211) < 1e-3) ? "globalne" : "lokalne";
 
-    // zapis jednej linii do CSV
+    //zapis jednej linii do csv
     out << "Przykład bez metody ekspansji;"
         << a << ";" << b << ";"
         << *fib_res << ";" << f_fib << ";" << iter_fib << ";" << min_fib_type << ";"
-        << lag_res.x(0) << ";" << f_lag << ";" << iter_lag << ";" << min_lag_type << "\n";
+        << *lag_res << ";" << f_lag << ";" << iter_lag << ";" << min_lag_type << "\n";
 
     delete fib_res;
+    delete lag_res;
     out.close();
 }
 
-
-
-
-
-
 void lab2()
 {
-	cout << solve_ode(l2_dvdt, 0, 1,500, matrix(3, new double[3]{5, 1, 20.0}), matrix(1, new double[1]{0.005}))[1] << endl;
+	double x0 = 1.0;       
+	double d = 1.0;       
+	double alpha = 1.2;
+	double epsilon = 1e-2;     
+	double* interval = expansion(target_f_l2, x0, d, alpha, 100);
+	cout << "Found interval: [" << interval[0] << ", " << interval[1] << "]" << endl;
+	double* fibo = fib(target_f_l2, interval[0], interval[1], epsilon);
+	cout << "fibo method D: " << *fibo << endl;
+	cout << "error fibo method: " << target_f_l2(*fibo) << endl;
+	double* lagr = lag(target_f_l2, interval[0], interval[1], epsilon, 1e-5, 1000);
+	cout<< "lagr method D: "<< *lagr <<endl;
+	cout<< "error: "<< target_f_l2(*lagr) << endl;
+	cout << "Simulation with optimal D:" << endl;
+	f_l2_print(*lagr);
+	delete[] interval;
+	delete fibo;
+	delete lagr;
 
 }
 
