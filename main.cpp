@@ -17,12 +17,13 @@ void lab3();
 void lab4();
 void lab5();
 void lab6();
+void lab1_no_exp();
 
 int main()
 {
 	try
 	{
-		lab1();
+		lab1_no_exp();
 	}
 	catch (string EX_INFO)
 	{
@@ -124,6 +125,40 @@ void lab1() {
         }
     }
 
+    out.close();
+}
+
+void lab1_no_exp() {
+    ofstream out("wyniki_lab1_no_exp.csv");
+    out << "Opis;a;b;x_fib;f_fib;it_fib;min_fib;x_lag;f_lag;it_lag;min_lag\n";
+
+    double eps = 1e-4;
+    int Nmax = 1000;
+    double a = -100;
+    double b = 100;
+
+    // metoda Fibonacciego
+    double* fib_res = fib(ff1, a, b, eps);
+    extern int fib_calls;
+    int iter_fib = fib_calls;
+    double f_fib = ff1(*fib_res);
+
+    // metoda Lagrange'a
+    solution lag_res = lag(ff1T, a, b, eps, 1e-5, Nmax);
+    extern int lag_calls;
+    int iter_lag = lag_calls;
+    double f_lag = ff1T(lag_res.x, NAN, NAN)(0);
+
+    string min_fib_type = (fabs(f_fib + 0.9211) < 1e-3) ? "globalne" : "lokalne";
+    string min_lag_type = (fabs(f_lag + 0.9211) < 1e-3) ? "globalne" : "lokalne";
+
+    // zapis jednej linii do CSV
+    out << "Przykład bez metody ekspansji;"
+        << a << ";" << b << ";"
+        << *fib_res << ";" << f_fib << ";" << iter_fib << ";" << min_fib_type << ";"
+        << lag_res.x(0) << ";" << f_lag << ";" << iter_lag << ";" << min_lag_type << "\n";
+
+    delete fib_res;
     out.close();
 }
 
