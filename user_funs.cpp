@@ -77,3 +77,38 @@ matrix l2_dvdt(double t,matrix Y, matrix ud1, matrix ud2)
 	dY(2) = F_B_in*(T_B_in - T_B)/V_B + F_A_out*(T_A - T_B)/V_B;
 	return dY;
 }
+
+matrix f_l2(double x, double t) {
+	x *= 0.0001;
+	return solve_ode(l2_dvdt, 0, 1, t, matrix(3, new double[3]{5, 1, 20.0}), matrix(1, new double[1]{x}))[1];
+}
+
+double f_l2_max(double x)
+{
+	int t = 500;
+	matrix res = f_l2(x, t);
+	double ans = 0.0;
+	for(int i = 0; i < t; ++i)
+	{
+		if(res(i, 2) > ans) {
+			ans = res(i, 2);
+		}
+	}
+	return ans;
+}
+
+void f_l2_print(double x)
+{
+	int t = 500;
+	cout << f_l2(x, t) << endl;
+	return;
+}
+
+double target_f_l2(double x)
+{
+	double ans = f_l2_max(x);
+
+	double target_temp = 50.0;
+	ans = pow(ans - target_temp, 2);
+	return ans;
+}

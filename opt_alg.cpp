@@ -142,121 +142,80 @@ double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1,
 
 }
 
-solution lag(matrix(*ff)(matrix, matrix, matrix), double a, double b, double epsilon, double gamma, int Nmax, matrix ud1, matrix ud2)
+double* lag(double(*ff)(double), double a, double b, double epsilon, double gamma, int Nmax, matrix ud1, matrix ud2)
 {
 	try
 	{
-		solution Xopt;
-		
-
 		int i = 0;
 		double a_i = a, b_i = b;
-		double c_i = (a + b) / 2.0;
+		double c_i = (a + b) / 2.0;  
 		double d_i = 0.0, d_prev = 0.0;
+		int fcalls = 0;  
 		
 		if (!(a_i < c_i && c_i < b_i)) {
-			Xopt.flag = 0;
-			return Xopt;
+			throw string("Nieprawidlowy przedzial poczatkowy");
 		}
 		
 		do {
-
-			matrix x_a(1, 1), x_b(1, 1), x_c(1, 1);
-			x_a(0) = a_i;
-			x_b(0) = b_i;
-			x_c(0) = c_i;
+			double f_a = ff(a_i);
+			double f_b = ff(b_i);
+			double f_c = ff(c_i);
+			fcalls += 3;
 			
-			matrix f_a = ff(x_a, ud1, ud2);
-			matrix f_b = ff(x_b, ud1, ud2);
-			matrix f_c = ff(x_c, ud1, ud2);
+			double l = f_a * (b_i * b_i - c_i * c_i) + 
+					   f_b * (c_i * c_i - a_i * a_i) + 
+					   f_c * (a_i * a_i - b_i * b_i);
 			
-			double l = f_a(0) * (b_i * b_i - c_i * c_i) + 
-					   f_b(0) * (c_i * c_i - a_i * a_i) + 
-					   f_c(0) * (a_i * a_i - b_i * b_i);
-			
-			double m = f_a(0) * (b_i - c_i) + 
-					   f_b(0) * (c_i - a_i) + 
-					   f_c(0) * (a_i - b_i);
+			double m = f_a * (b_i - c_i) + 
+					   f_b * (c_i - a_i) + 
+					   f_c * (a_i - b_i);
 			
 			if (m <= 0) {
-				Xopt.flag = 0;
-				return Xopt;
+				throw string("Interpolacja Lagrange'a: m <= 0 (parabola wklęsła lub degeneracja)");
 			}
 			
 			d_prev = d_i;
 			
-
 			d_i = 0.5 * l / m;
 			
 			if (a_i < d_i && d_i < c_i) {
-				matrix x_d(1, 1);
-				x_d(0) = d_i;
-				matrix f_d = ff(x_d, ud1, ud2);
+				double f_d = ff(d_i);
+				fcalls++;
 				
-				if (f_d(0) < f_c(0)) {
-					double new_a = a_i;
-					double new_c = d_i;
-					double new_b = c_i;
-					
-					a_i = new_a;
-					c_i = new_c;
-					b_i = new_b;
+				if (f_d < f_c) {
+					b_i = c_i;
+					c_i = d_i;
 				} else {
-					double new_a = d_i;
-					double new_c = c_i;
-					double new_b = b_i;
-					
-					a_i = new_a;
-					c_i = new_c;
-					b_i = new_b;
+					a_i = d_i;
 				}
 			} else if (c_i < d_i && d_i < b_i) {
-				matrix x_d(1, 1);
-				x_d(0) = d_i;
-				matrix f_d = ff(x_d, ud1, ud2);
+				double f_d = ff(d_i);
+				fcalls++;
 				
-				if (f_d(0) < f_c(0)) {
-					double new_a = c_i;
-					double new_c = d_i;
-					double new_b = b_i;
-					
-					a_i = new_a;
-					c_i = new_c;
-					b_i = new_b;
+				if (f_d < f_c) {
+					a_i = c_i;
+					c_i = d_i;
 				} else {
-					double new_a = a_i;
-					double new_c = c_i;
-					double new_b = d_i;
-					
-					a_i = new_a;
-					c_i = new_c;
-					b_i = new_b;
+					b_i = d_i;
 				}
 			} else {
-				Xopt.flag = 0;
-				return Xopt;
+				throw string("Interpolacja Lagrange'a: punkt d poza przedzialem (a,b)");
 			}
 			
 			i++;
 			
-			if (solution::f_calls > Nmax) {
-				Xopt.flag = 0;
-				return Xopt;
+			if (fcalls > Nmax) {
+				throw string("Przekroczono maksymalna liczbe wywolan funkcji celu (Nmax)");
 			}
 			
-		} while ((b_i - a_i) >= epsilon && (i == 1 || std::fabs(d_i - d_prev) >= gamma)); 
+		} while ((b_i - a_i) >= epsilon && (i == 1 || std::fabs(d_i - d_prev) >= gamma)); // строка 39
 		
-		
-		Xopt.x = matrix(1, 1);
-		Xopt.x(0) = d_i;
-		Xopt.fit_fun(ff, ud1, ud2);
-		Xopt.flag = 1; 
-		
-		return Xopt;
+		double* result = new double(d_i);
+		return result;
 	}
 	catch (string ex_info)
 	{
-		throw ("solution lag(...):\n" + ex_info);
+		throw ("double* lag(...):\n" + ex_info);
 	}
 }
 

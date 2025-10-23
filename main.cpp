@@ -78,16 +78,33 @@ void lab1()
 	cout<< "x_min fibo method: "<< *fibo <<endl;
 	cout<< "f(x_min) fibo method: "<< ff1(*fibo) <<endl;
 
-	solution lagr = lag(ff1T, p[0], p[1], epsilon, 1e-5, 1000);
-	cout<< "x_min lagr method: "<< lagr.x <<endl;
-	cout<< "f(x_min) lagr method: "<< ff1T(lagr.x) << endl;
+	double* lagr = lag(ff1, p[0], p[1], epsilon, 1e-5, 1000);
+	cout<< "x_min lagr method: "<< *lagr <<endl;
+	cout<< "f(x_min) lagr method: "<< ff1T(*lagr) << endl;
 	delete[] p;
 	delete fibo;
+	delete lagr;
 }
 
 void lab2()
 {
-	cout << solve_ode(l2_dvdt, 0, 1,500, matrix(3, new double[3]{5, 1, 20.0}), matrix(1, new double[1]{0.005}))[1] << endl;
+	double x0 = 1.0;       
+	double d = 1.0;       
+	double alpha = 1.2;
+	double epsilon = 1e-2;     
+	double* interval = expansion(target_f_l2, x0, d, alpha, 100);
+	cout << "Found interval: [" << interval[0] << ", " << interval[1] << "]" << endl;
+	double* fibo = fib(target_f_l2, interval[0], interval[1], epsilon);
+	cout << "fibo method D: " << *fibo << endl;
+	cout << "error fibo method: " << target_f_l2(*fibo) << endl;
+	double* lagr = lag(target_f_l2, interval[0], interval[1], epsilon, 1e-5, 1000);
+	cout<< "lagr method D: "<< *lagr <<endl;
+	cout<< "error: "<< target_f_l2(*lagr) << endl;
+	cout << "Simulation with optimal D:" << endl;
+	f_l2_print(*lagr);
+	delete[] interval;
+	delete fibo;
+	delete lagr;
 
 }
 
