@@ -22,7 +22,7 @@ int main()
 {
 	try
 	{
-		lab2();
+		lab1();
 	}
 	catch (string EX_INFO)
 	{
@@ -66,24 +66,71 @@ void lab0()
 	Y[1].~matrix();
 }
 
-void lab1()
-{
-	double epsilon = 1e-2;	
-	// Expansion
-	double* p = expansion(ff1, 90, 1, 1.2, 1000);
-	cout << "Wynik rozszerzenia: " << p[0] << ", " << p[1] << endl;
-	
 
-	double* fibo = fib(ff1, p[0], p[1],epsilon);
-	cout<< "x_min fibo method: "<< *fibo <<endl;
-	cout<< "f(x_min) fibo method: "<< ff1(*fibo) <<endl;
+void lab1() {
+    ofstream out("wyniki_lab1.csv");
+    out << "i;alpha;x0;a;b;it_exp;x_fib;f_fib;it_fib;min_fib;x_lag;f_lag;it_lag;min_lag\n";
 
-	solution lagr = lag(ff1T, p[0], p[1], epsilon, 1e-5, 1000);
-	cout<< "x_min lagr method: "<< lagr.x <<endl;
-	cout<< "f(x_min) lagr method: "<< ff1T(lagr.x) << endl;
-	delete[] p;
-	delete fibo;
+    double eps = 1e-4;
+    int Nmax = 1000;
+    double alphas[3] = {1.2, 1.5, 2.0};
+
+    srand(time(NULL));
+
+    for (int k = 0; k < 3; ++k) {
+        double alpha = alphas[k];
+
+        for (int i = 0; i < 100; ++i) {
+            double x0 = -100 + (rand() % 200);
+
+            //metoda ekspansji
+            double* p = expansion(ff1, x0, 1.0, alpha, Nmax);
+            extern int expansion_calls;  
+            int iter_exp = expansion_calls;
+
+            //metoda Fibonacciego
+            double* fib_res = fib(ff1, p[0], p[1], eps);
+            extern int fib_calls;        
+            int iter_fib = fib_calls;
+            double f_fib = ff1(*fib_res);
+
+            //metoda Lagrange'a
+            solution lag_res = lag(ff1T, p[0], p[1], eps, 1e-5, Nmax);
+            extern int lag_calls;        
+            int iter_lag = lag_calls;
+            double f_lag = ff1T(lag_res.x, NAN, NAN)(0);
+
+            string min_fib_type = (fabs(f_fib + 0.9211) < 1e-3) ? "globalne" : "lokalne";
+            string min_lag_type = (fabs(f_lag + 0.9211) < 1e-3) ? "globalne" : "lokalne";
+
+			//zapis do csv
+            out << i + 1 << ";"
+                << alpha << ";"
+                << x0 << ";"
+                << p[0] << ";"
+                << p[1] << ";"
+                << iter_exp << ";"
+                << *fib_res << ";"
+                << f_fib << ";"
+                << iter_fib << ";"
+                << min_fib_type << ";"
+                << lag_res.x(0) << ";"
+                << f_lag << ";"
+                << iter_lag << ";"
+                << min_lag_type << "\n";
+
+            delete[] p;
+            delete fib_res;
+        }
+    }
+
+    out.close();
 }
+
+
+
+
+
 
 void lab2()
 {

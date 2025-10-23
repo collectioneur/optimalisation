@@ -40,225 +40,165 @@ solution MC(matrix(*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, do
 	}
 }
 
+int expansion_calls = 0; 
+
 double* expansion(double(*ff)(double), double x0, double d, double alpha, int Nmax, matrix ud1, matrix ud2)
 {
-	try
-	{
-		double* p = new double[2] { 0, 0 };
-		//Tu wpisz kod funkcji
+    try {
+        double* p = new double[2]{0, 0};
+        int i = 0;
+        expansion_calls = 0;
+        std::vector<double> X = {x0, x0 + d};
 
-		int i = 0;
-		vector<double> X = { x0, x0 + d };
+        double f0 = ff(X[0]); expansion_calls++;
+        double f1 = ff(X[1]); expansion_calls++;
 
-		double f0 = ff(X[0]);
-		double f1 = ff(X[1]);
+        if (f1 == f0) {
+            p[0] = X[0];
+            p[1] = X[1];
+            return p;
+        }
 
-		if (f1 == f0) {
-			p[0] = X[0];
-			p[1] = X[1];
-			return p;
-		}
+        if (f1 > f0) {
+            d = -d;
+            X[1] = X[0] + d;
+            f1 = ff(X[1]); expansion_calls++;
+            if (f1 >= f0) {
+                p[0] = X[1];
+                p[1] = X[0] - d;
+                return p;
+            }
+        }
 
-		if (f1 > f0) {
-			d = -d;
-			X[1] = X[0] + d;
-			f1 = ff(X[1]);
-			if (f1 >= f0) {
-				p[0] = X[1];
-				p[1] = X[0] - d;
-				return p;
-			}
-		}
+        while (f1 < f0) {
+            if (i >= Nmax) break;
+            i++;
+            X.push_back(X[0] + pow(alpha, i) * d);
+            f0 = f1;
+            f1 = ff(X[i + 1]); expansion_calls++;
+        }
 
-		while (f1 < f0) {
-			if (i >= Nmax) {
-				throw ("Przekroczono maksymalna liczbe iteracji");
-			}
-			
-			i += 1;
-			X.push_back(X[0] + pow(alpha, i) * d);
+        if (d > 0) {
+            p[0] = X[i - 1];
+            p[1] = X[i + 1];
+        } else {
+            p[0] = X[i + 1];
+            p[1] = X[i - 1];
+        }
 
-			f0 = f1;
-			f1 = ff(X[i + 1]);
-		}
-
-		if (d > 0)
-			p[0] = X[i - 1], p[1] = X[i + 1];
-		else
-			p[0] = X[i + 1], p[1] = X[i - 1];
-
-		return p;
-	}
-	catch (string ex_info)
-	{
-		throw ("double* expansion(...):\n" + ex_info);
-	}
+        return p;
+    }
+    catch (string ex_info) {
+        throw ("double* expansion(...):\n" + ex_info);
+    }
 }
+
+int fib_calls = 0;
 
 double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1, matrix ud2)
 {
-	try
-	{
-		std::vector<unsigned long long> F = {0, 1};
-		//calculate fibonacci numbers based on a, b and epsilon 
-		while (F.back() < static_cast<unsigned long long>((b - a) / epsilon))
-			F.push_back(F[F.size() - 1] + F[F.size() - 2]);
-		int N = static_cast<int>(F.size()) - 1;
+    try {
+        std::vector<unsigned long long> F = {0, 1};
+        while (F.back() < static_cast<unsigned long long>((b - a) / epsilon))
+            F.push_back(F[F.size() - 1] + F[F.size() - 2]);
+        int N = static_cast<int>(F.size()) - 1;
 
+        double x1 = a + (double)F[N - 2] / F[N] * (b - a);
+        double x2 = a + (double)F[N - 1] / F[N] * (b - a);
 
-		double x1 = a + (double)F[N - 2] / F[N] * (b - a);
-		double x2 = a + (double)F[N - 1] / F[N] * (b - a);
+        double f1 = ff(x1); fib_calls++;
+        double f2 = ff(x2); fib_calls++;
 
-		double f1 = ff(x1);
-		double f2 = ff(x2);
+        for (int k = 1; k <= N - 2; ++k) {
+            if (f1 > f2) {
+                a = x1;
+                x1 = x2;
+                f1 = f2;
+                x2 = a + (double)F[N - k - 1] / F[N - k] * (b - a);
+                f2 = ff(x2); fib_calls++;
+            } else {
+                b = x2;
+                x2 = x1;
+                f2 = f1;
+                x1 = a + (double)F[N - k - 2] / F[N - k] * (b - a);
+                f1 = ff(x1); fib_calls++;
+            }
+        }
 
-		//minimize range [a, b] using fibonacci numbers
-		for (int k = 1; k <= N - 2; ++k)
-    	{
-			if (f1 > f2)
-			{
-				a = x1;
-				x1 = x2;
-				f1 = f2;
-				x2 = a + (double)F[N - k - 1] / F[N - k] * (b - a);
-				f2 = ff(x2);
-			}
-			else
-			{
-				b = x2;
-				x2 = x1;
-				f2 = f1;
-				x1 = a + (double)F[N - k - 2] / F[N - k] * (b - a);
-				f1 = ff(x1);
-			}
-		}
-		double* xmin_val = new double((x1 + x2) / 2.0);
-		return xmin_val;
-	}
-	catch (string ex_info)
-	{
-			throw ("double* fib(...):\n" + ex_info);
-	}
-
+        double* xmin_val = new double((x1 + x2) / 2.0);
+        return xmin_val;
+    }
+    catch (string ex_info) {
+        throw ("double* fib(...):\n" + ex_info);
+    }
 }
 
+
+int lag_calls = 0;
 solution lag(matrix(*ff)(matrix, matrix, matrix), double a, double b, double epsilon, double gamma, int Nmax, matrix ud1, matrix ud2)
 {
-	try
-	{
-		solution Xopt;
-		
+    try {
+        solution Xopt;
+        lag_calls = 0;
+        int i = 0;
+        double a_i = a, b_i = b;
+        double c_i = (a + b) / 2.0;
+        double d_i = 0.0, d_prev = 0.0;
 
-		int i = 0;
-		double a_i = a, b_i = b;
-		double c_i = (a + b) / 2.0;
-		double d_i = 0.0, d_prev = 0.0;
-		
-		if (!(a_i < c_i && c_i < b_i)) {
-			Xopt.flag = 0;
-			return Xopt;
-		}
-		
-		do {
+        if (!(a_i < c_i && c_i < b_i)) {
+            Xopt.flag = 0;
+            return Xopt;
+        }
 
-			matrix x_a(1, 1), x_b(1, 1), x_c(1, 1);
-			x_a(0) = a_i;
-			x_b(0) = b_i;
-			x_c(0) = c_i;
-			
-			matrix f_a = ff(x_a, ud1, ud2);
-			matrix f_b = ff(x_b, ud1, ud2);
-			matrix f_c = ff(x_c, ud1, ud2);
-			
-			double l = f_a(0) * (b_i * b_i - c_i * c_i) + 
-					   f_b(0) * (c_i * c_i - a_i * a_i) + 
-					   f_c(0) * (a_i * a_i - b_i * b_i);
-			
-			double m = f_a(0) * (b_i - c_i) + 
-					   f_b(0) * (c_i - a_i) + 
-					   f_c(0) * (a_i - b_i);
-			
-			if (m <= 0) {
-				Xopt.flag = 0;
-				return Xopt;
-			}
-			
-			d_prev = d_i;
-			
+        do {
+            matrix x_a(1, 1), x_b(1, 1), x_c(1, 1);
+            x_a(0) = a_i;
+            x_b(0) = b_i;
+            x_c(0) = c_i;
 
-			d_i = 0.5 * l / m;
-			
-			if (a_i < d_i && d_i < c_i) {
-				matrix x_d(1, 1);
-				x_d(0) = d_i;
-				matrix f_d = ff(x_d, ud1, ud2);
-				
-				if (f_d(0) < f_c(0)) {
-					double new_a = a_i;
-					double new_c = d_i;
-					double new_b = c_i;
-					
-					a_i = new_a;
-					c_i = new_c;
-					b_i = new_b;
-				} else {
-					double new_a = d_i;
-					double new_c = c_i;
-					double new_b = b_i;
-					
-					a_i = new_a;
-					c_i = new_c;
-					b_i = new_b;
-				}
-			} else if (c_i < d_i && d_i < b_i) {
-				matrix x_d(1, 1);
-				x_d(0) = d_i;
-				matrix f_d = ff(x_d, ud1, ud2);
-				
-				if (f_d(0) < f_c(0)) {
-					double new_a = c_i;
-					double new_c = d_i;
-					double new_b = b_i;
-					
-					a_i = new_a;
-					c_i = new_c;
-					b_i = new_b;
-				} else {
-					double new_a = a_i;
-					double new_c = c_i;
-					double new_b = d_i;
-					
-					a_i = new_a;
-					c_i = new_c;
-					b_i = new_b;
-				}
-			} else {
-				Xopt.flag = 0;
-				return Xopt;
-			}
-			
-			i++;
-			
-			if (solution::f_calls > Nmax) {
-				Xopt.flag = 0;
-				return Xopt;
-			}
-			
-		} while ((b_i - a_i) >= epsilon && (i == 1 || std::fabs(d_i - d_prev) >= gamma)); 
-		
-		
-		Xopt.x = matrix(1, 1);
-		Xopt.x(0) = d_i;
-		Xopt.fit_fun(ff, ud1, ud2);
-		Xopt.flag = 1; 
-		
-		return Xopt;
-	}
-	catch (string ex_info)
-	{
-		throw ("solution lag(...):\n" + ex_info);
-	}
+            matrix f_a = ff(x_a, ud1, ud2); lag_calls++;
+            matrix f_b = ff(x_b, ud1, ud2); lag_calls++;
+            matrix f_c = ff(x_c, ud1, ud2); lag_calls++;
+
+            double l = f_a(0) * (b_i * b_i - c_i * c_i) +
+                       f_b(0) * (c_i * c_i - a_i * a_i) +
+                       f_c(0) * (a_i * a_i - b_i * b_i);
+
+            double m = f_a(0) * (b_i - c_i) +
+                       f_b(0) * (c_i - a_i) +
+                       f_c(0) * (a_i - b_i);
+
+            if (m <= 0) break;
+            d_prev = d_i;
+            d_i = 0.5 * l / m;
+
+            matrix x_d(1, 1);
+            x_d(0) = d_i;
+            matrix f_d = ff(x_d, ud1, ud2); lag_calls++;
+
+            if (d_i < c_i) {
+                if (f_d(0) < f_c(0)) b_i = c_i;
+                else a_i = d_i;
+            } else {
+                if (f_d(0) < f_c(0)) a_i = c_i;
+                else b_i = d_i;
+            }
+
+            c_i = d_i;
+            i++;
+        } while ((b_i - a_i) >= epsilon && i < Nmax);
+
+        Xopt.x = matrix(1, 1);
+        Xopt.x(0) = (a_i + b_i) / 2.0;
+        Xopt.fit_fun(ff, ud1, ud2);
+        Xopt.flag = 1;
+        return Xopt;
+    }
+    catch (string ex_info) {
+        throw ("solution lag(...):\n" + ex_info);
+    }
 }
+
 
 solution HJ(matrix(*ff)(matrix, matrix, matrix), matrix x0, double s, double alpha, double epsilon, int Nmax, matrix ud1, matrix ud2)
 {
