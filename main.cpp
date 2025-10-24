@@ -17,7 +17,7 @@ void lab3();
 void lab4();
 void lab5();
 void lab6();
-void lab1_no_exp();
+void lab1_all();
 
 int main()
 {
@@ -25,6 +25,7 @@ int main()
 	{
 		lab2();
 		lab4();
+        lab1_all();
 	}
 	catch (string EX_INFO)
 	{
@@ -130,8 +131,8 @@ void lab1() {
     out.close();
 }
 
-void lab1_no_exp() {
-    ofstream out("wyniki_lab1_no_exp.csv");
+void lab1_all() {
+    ofstream out("wyniki_lab1_all.csv");
     out << "Opis;a;b;x_fib;f_fib;it_fib;min_fib;x_lag;f_lag;it_lag;min_lag\n";
 
     double eps = 1e-4;
@@ -139,32 +140,75 @@ void lab1_no_exp() {
     double a = -100;
     double b = 100;
 
-    //metoda Fibonacciego
-    double* fib_res = fib(ff1, a, b, eps);
+    //brak metody ekspansji
+    double* fib_res_noexp = fib(ff1, a, b, eps);
     extern int fib_calls;
-    int iter_fib = fib_calls;
-    double f_fib = ff1(*fib_res);
+    int iter_fib_noexp = fib_calls;
+    double f_fib_noexp = ff1(*fib_res_noexp);
 
-    //metoda Lagrange’a (wersja double*)
-    double* lag_res = lag(ff1, a, b, eps, 1e-5, Nmax);
+    double* lag_res_noexp = lag(ff1, a, b, eps, 1e-5, Nmax);
     extern int lag_calls;
-    int iter_lag = lag_calls;
-    double f_lag = ff1(*lag_res);
+    int iter_lag_noexp = lag_calls;
+    double f_lag_noexp = ff1(*lag_res_noexp);
 
-    //klasyfikacja minimum
-    string min_fib_type = (fabs(f_fib + 0.9211) < 1e-3) ? "globalne" : "lokalne";
-    string min_lag_type = (fabs(f_lag + 0.9211) < 1e-3) ? "globalne" : "lokalne";
+    string min_fib_noexp = (fabs(f_fib_noexp + 0.9211) < 1e-3) ? "globalne" : "lokalne";
+    string min_lag_noexp = (fabs(f_lag_noexp + 0.9211) < 1e-3) ? "globalne" : "lokalne";
 
-    //zapis jednej linii do csv
-    out << "Przykład bez metody ekspansji;"
+    out << "Fibonacci bez ekspansji;"
         << a << ";" << b << ";"
-        << *fib_res << ";" << f_fib << ";" << iter_fib << ";" << min_fib_type << ";"
-        << *lag_res << ";" << f_lag << ";" << iter_lag << ";" << min_lag_type << "\n";
+        << *fib_res_noexp << ";" << f_fib_noexp << ";" << iter_fib_noexp << ";" << min_fib_noexp << ";"
+        << *lag_res_noexp << ";" << f_lag_noexp << ";" << iter_lag_noexp << ";" << min_lag_noexp << "\n";
 
-    delete fib_res;
-    delete lag_res;
+    cout << "=== Fibonacci bez ekspansji ===\n";
+    cout << "Przedział: [" << a << ", " << b << "]\n";
+    cout << "x_fib = " << *fib_res_noexp << ", f_fib = " << f_fib_noexp
+         << ", iteracje = " << iter_fib_noexp << ", typ minimum = " << min_fib_noexp << "\n";
+    cout << "x_lag = " << *lag_res_noexp << ", f_lag = " << f_lag_noexp
+         << ", iteracje = " << iter_lag_noexp << ", typ minimum = " << min_lag_noexp << "\n\n";
+
+    //metoda ekspansji
+    double x0 = -100 + (rand() % 200);
+    double* p = expansion(ff1, x0, 1.0, 1.2, Nmax);
+    double a_exp = p[0];
+    double b_exp = p[1];
+
+    double* fib_res_exp = fib(ff1, a_exp, b_exp, eps);
+    extern int fib_calls;
+    int iter_fib_exp = fib_calls;
+    double f_fib_exp = ff1(*fib_res_exp);
+
+    double* lag_res_exp = lag(ff1, a_exp, b_exp, eps, 1e-5, Nmax);
+    extern int lag_calls;
+    int iter_lag_exp = lag_calls;
+    double f_lag_exp = ff1(*lag_res_exp);
+
+    string min_fib_exp = (fabs(f_fib_exp + 0.9211) < 1e-3) ? "globalne" : "lokalne";
+    string min_lag_exp = (fabs(f_lag_exp + 0.9211) < 1e-3) ? "globalne" : "lokalne";
+
+    out << "Fibonacci z ekspansją;"
+        << a_exp << ";" << b_exp << ";"
+        << *fib_res_exp << ";" << f_fib_exp << ";" << iter_fib_exp << ";" << min_fib_exp << ";"
+        << *lag_res_exp << ";" << f_lag_exp << ";" << iter_lag_exp << ";" << min_lag_exp << "\n";
+
+    cout << "=== Fibonacci z ekspansją ===\n";
+    cout << "Nowy przedział po ekspansji: [" << a_exp << ", " << b_exp << "]\n";
+    cout << "x_fib = " << *fib_res_exp << ", f_fib = " << f_fib_exp
+         << ", iteracje = " << iter_fib_exp << ", typ minimum = " << min_fib_exp << "\n";
+    cout << "x_lag = " << *lag_res_exp << ", f_lag = " << f_lag_exp
+         << ", iteracje = " << iter_lag_exp << ", typ minimum = " << min_lag_exp << "\n\n";
+
+    delete fib_res_noexp;
+    delete lag_res_noexp;
+    delete fib_res_exp;
+    delete lag_res_exp;
+    delete p;
     out.close();
+
+    cout << "=== Zapisano wyniki do pliku wyniki_lab1_all.csv ===\n";
 }
+
+
+
 
 void lab2()
 {
