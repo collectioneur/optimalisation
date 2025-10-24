@@ -125,7 +125,6 @@ void lab1() {
             delete lag_res;
         }
     }
-
     out.close();
 }
 
@@ -194,19 +193,7 @@ void lab1_all() {
              << ", x_lag=" << *lag_res_exp << ", f_lag=" << f_lag_exp << "\n\n";
 
         delete fib_res_noexp;
-        delete lag_res_noexp;
-        delete fib_res_exp;
-        delete lag_res_exp;
-        delete p;
-    }
-
-    out.close();
-    cout << "=== Zapisano wyniki do wyniki_lab1_all.csv ===\n";
-}
-
-void lab2()
-{
-    double x0 = 20.0;
+        delet    double x0 = 20.0;
     double d = 5.0;
     double alpha = 1.5;
     double epsilon = 1e-2;
@@ -224,6 +211,18 @@ void lab2()
     f_l2_print(*lagr);
 
     delete[] interval;
+<< endl;
+    } else {
+        cerr << "Error: Cannot open file for writing!" << endl;
+    }
+    
+    // Zwolnienie pamięci
+    Y_fib[0].~matrix();
+    Y_fib[1].~matrix();
+    Y_lag[0].~matrix();
+    Y_lag[1].~matrix();
+    delete[] Y_fib;
+    delete[] Y_lag;
     delete fibo;
     delete lagr;
 }
