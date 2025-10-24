@@ -114,7 +114,7 @@ double target_f_l2(double x)
 	return ans;
 }
 
-matrix target_func_l3(matrix x)
+matrix target_func_l3(matrix x, matrix ud1, matrix ud2)
 {
 	matrix y(1,1);
 	double x1 = x(0);

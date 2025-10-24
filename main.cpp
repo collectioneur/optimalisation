@@ -24,6 +24,7 @@ int main()
 	try
 	{
 		lab2();
+		lab4();
 	}
 	catch (string EX_INFO)
 	{
@@ -197,13 +198,22 @@ void lab2()
 
 void lab3()
 {
-	matrix x0(2, new double[2]{0.9, 0.5});
-	cout << target_func_l3(x0) << endl;
+	matrix x0(2, new double[2]{1.0, 0.0});
+	matrix s0(2, new double[2]{1.0, 1.0});
+	double alpha = 1.2, beta = 0.8, epsilon = 1e-4;
+	int Nmax = 200;
+	
+	solution::clear_calls();
+	solution result = Rosen(target_func_l3, x0, s0, alpha, beta, epsilon, Nmax);
+	
+	cout << "x* = [" << result.x(0) << ", " << result.x(1) << "]" << endl;
+	cout << "f(x*) = " << result.y(0) << endl;
+	cout << "Calls: " << solution::f_calls << endl;
 }
 
 void lab4()
 {
-
+	cout << HJ(target_func_l3, matrix(2, new double[2]{-0.1, 0.2}), 1.0, 0.3, 1e-2, 1000, NAN, NAN).x << endl;
 }
 
 void lab5()

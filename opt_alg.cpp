@@ -199,10 +199,44 @@ solution HJ(matrix(*ff)(matrix, matrix, matrix), matrix x0, double s, double alp
 {
 	try
 	{
-		solution Xopt;
+		solution Xb;
+		matrix x = x0;
 		//Tu wpisz kod funkcji
+		while (s > epsilon)
+		{
+			Xb = x;
+			x = HJ_trial(ff, Xb, s, ud1, ud2).x;
 
-		return Xopt;
+			//cout << "HJ expansion step: " << x << " f: " << ff(x, ud1, ud2) << endl;
+			//cout << "Current step size s: " << s << endl;
+
+			if (ff(x, ud1, ud2) < ff(Xb.x, ud1, ud2))
+			{
+				while (ff(x, ud1, ud2) < ff(Xb.x, ud1, ud2) && s > epsilon)
+				{
+					matrix xb_ = Xb.x;
+					Xb = x;
+					x = 2 * Xb.x - xb_;
+					x = HJ_trial(ff, x, s, ud1, ud2).x;
+					if (solution::f_calls > Nmax)
+					{
+						throw string("Przekroczono maksymalna liczbe wywolan funkcji celu (Nmax)");
+					}
+				}
+				x = Xb.x;
+			}
+			else{
+				s *= alpha;
+			}
+			if (solution::f_calls > Nmax)
+			{
+				throw string("Przekroczono maksymalna liczbe wywolan funkcji celu (Nmax)");
+			}
+
+		}
+		
+
+		return Xb;
 	}
 	catch (string ex_info)
 	{
@@ -210,12 +244,29 @@ solution HJ(matrix(*ff)(matrix, matrix, matrix), matrix x0, double s, double alp
 	}
 }
 
+matrix dir[4] = {
+	matrix(2, new double[2]{0, 1}),
+	matrix(2, new double[2]{0, -1}),
+	matrix(2, new double[2]{1, 0}),
+	matrix(2, new double[2]{-1, 0})
+};
+
 solution HJ_trial(matrix(*ff)(matrix, matrix, matrix), solution XB, double s, matrix ud1, matrix ud2)
 {
 	try
 	{
 		//Tu wpisz kod funkcji
-
+		for (int j = 0; j < 4; ++j)
+		{
+			if (ff(XB.x + dir[j] * s, ud1, ud2) < ff(XB.x, ud1, ud2))
+			{
+				XB.x = XB.x + dir[j] * s;
+			}
+			else if (ff(XB.x - dir[j] * s, ud1, ud2) < ff(XB.x, ud1, ud2))
+			{
+				XB.x = XB.x - dir[j] * s;
+			}
+		}
 		return XB;
 	}
 	catch (string ex_info)
@@ -229,8 +280,71 @@ solution Rosen(matrix(*ff)(matrix, matrix, matrix), matrix x0, matrix s0, double
 	try
 	{
 		solution Xopt;
-		//Tu wpisz kod funkcji
+		
+		int n = 2;
+		
+		int i = 0;
+		matrix d = ident_mat(n);
+		matrix lambda(n, 1, 0.0);
+		matrix p(n, 1, 0.0);
+		matrix s = s0;
+		matrix s_initial = s0;
+		matrix xB = x0;
+		
+		solution temp_sol;
+		temp_sol.x = xB;
+		temp_sol.fit_fun(ff, ud1, ud2);
+		double f_xB = temp_sol.y(0);
 
+		do {
+			for (int j = 0; j < n; j++) {
+				matrix test_point = xB;
+				for (int k = 0; k < n; k++) {
+					test_point(k) += s(j) * d(k, j);
+				}
+				
+				temp_sol.x = test_point;
+				temp_sol.fit_fun(ff, ud1, ud2);
+				double f_test = temp_sol.y(0);
+				
+				if (f_test < f_xB) {
+					xB = test_point;
+					f_xB = f_test;
+					lambda(j) += s(j);
+					s(j) = alpha * s(j);
+				} else {
+					s(j) = -beta * s(j);
+					p(j) += 1;
+				}
+			}
+
+			i++;
+			
+			double max_step = 0.0;
+			for (int j = 0; j < n; j++) {
+				if (std::fabs(s(j)) > max_step) {
+					max_step = std::fabs(s(j));
+				}
+			}
+			
+			if (solution::f_calls > Nmax) {
+				Xopt.x = xB;
+				Xopt.fit_fun(ff, ud1, ud2);
+				Xopt.flag = 0;
+				return Xopt;
+			}
+			
+			if (max_step < epsilon) {
+				break;
+			}
+			
+		} while (i < 100);
+		
+
+		Xopt.x = xB;
+		Xopt.fit_fun(ff, ud1, ud2);
+		Xopt.flag = 1;
+		
 		return Xopt;
 	}
 	catch (string ex_info)
