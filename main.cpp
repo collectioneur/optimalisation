@@ -23,7 +23,7 @@ int main()
 {
 	try
 	{
-		lab3();
+		lab4();
 	}
 	catch (string EX_INFO)
 	{
@@ -189,13 +189,12 @@ void lab2()
 
 void lab3()
 {
-	matrix x0(2, new double[2]{0.9, 0.5});
-	cout << target_func_l3(x0) << endl;
+
 }
 
 void lab4()
 {
-
+	cout << HJ(target_func_l3, matrix(2, new double[2]{-0.1, 0.2}), 1.0, 0.3, 1e-2, 1000, NAN, NAN).x << endl;
 }
 
 void lab5()
