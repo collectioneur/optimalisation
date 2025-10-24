@@ -6,9 +6,9 @@
 
 solution MC(matrix(*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, double epsilon, int Nmax, matrix ud1 = NAN, matrix ud2 = NAN);
 
-double* expansion(double(*ff)(double), double x0, double d, double alpha, int Nmax, matrix ud1 = NAN, matrix ud2 = NAN); // throw (string);
-double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1 = NAN, matrix ud2 = NAN); // throw (string);
-solution lag(matrix(*ff)(matrix, matrix, matrix), double a, double b, double epsilon, double gamma, int Nmax, matrix ud1 = NAN, matrix ud2 = NAN); // throw (string);
+double* expansion(double(*ff)(double), double x0, double d, double alpha, int Nmax); // throw (string);
+double* fib(double(*ff)(double), double a, double b, double epsilon); // throw (string);
+double* lag(double(*ff)(double), double a, double b, double epsilon, double gamma, int Nmax); // throw (string);
 
 solution HJ(matrix(*ff)(matrix, matrix, matrix), matrix x0, double s, double alpha, double epsilon, int Nmax, matrix ud1 = NAN, matrix ud2 = NAN); // throw (string);
 solution HJ_trial(matrix(*ff)(matrix, matrix, matrix), solution XB, double s, matrix ud1 = NAN, matrix ud2 = NAN); // throw (string);
