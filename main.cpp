@@ -191,7 +191,17 @@ void lab2()
 
 void lab3()
 {
-
+	matrix x0(2, new double[2]{1.0, 0.0});
+	matrix s0(2, new double[2]{1.0, 1.0});
+	double alpha = 1.2, beta = 0.8, epsilon = 1e-4;
+	int Nmax = 200;
+	
+	solution::clear_calls();
+	solution result = Rosen(target_func_l3, x0, s0, alpha, beta, epsilon, Nmax);
+	
+	cout << "x* = [" << result.x(0) << ", " << result.x(1) << "]" << endl;
+	cout << "f(x*) = " << result.y(0) << endl;
+	cout << "Calls: " << solution::f_calls << endl;
 }
 
 void lab4()

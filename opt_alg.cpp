@@ -279,8 +279,71 @@ solution Rosen(matrix(*ff)(matrix, matrix, matrix), matrix x0, matrix s0, double
 	try
 	{
 		solution Xopt;
-		//Tu wpisz kod funkcji
+		
+		int n = 2;
+		
+		int i = 0;
+		matrix d = ident_mat(n);
+		matrix lambda(n, 1, 0.0);
+		matrix p(n, 1, 0.0);
+		matrix s = s0;
+		matrix s_initial = s0;
+		matrix xB = x0;
+		
+		solution temp_sol;
+		temp_sol.x = xB;
+		temp_sol.fit_fun(ff, ud1, ud2);
+		double f_xB = temp_sol.y(0);
 
+		do {
+			for (int j = 0; j < n; j++) {
+				matrix test_point = xB;
+				for (int k = 0; k < n; k++) {
+					test_point(k) += s(j) * d(k, j);
+				}
+				
+				temp_sol.x = test_point;
+				temp_sol.fit_fun(ff, ud1, ud2);
+				double f_test = temp_sol.y(0);
+				
+				if (f_test < f_xB) {
+					xB = test_point;
+					f_xB = f_test;
+					lambda(j) += s(j);
+					s(j) = alpha * s(j);
+				} else {
+					s(j) = -beta * s(j);
+					p(j) += 1;
+				}
+			}
+
+			i++;
+			
+			double max_step = 0.0;
+			for (int j = 0; j < n; j++) {
+				if (std::fabs(s(j)) > max_step) {
+					max_step = std::fabs(s(j));
+				}
+			}
+			
+			if (solution::f_calls > Nmax) {
+				Xopt.x = xB;
+				Xopt.fit_fun(ff, ud1, ud2);
+				Xopt.flag = 0;
+				return Xopt;
+			}
+			
+			if (max_step < epsilon) {
+				break;
+			}
+			
+		} while (i < 100);
+		
+
+		Xopt.x = xB;
+		Xopt.fit_fun(ff, ud1, ud2);
+		Xopt.flag = 1;
+		
 		return Xopt;
 	}
 	catch (string ex_info)
