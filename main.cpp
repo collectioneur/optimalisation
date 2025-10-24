@@ -175,9 +175,11 @@ void lab2()
 	cout << "Found interval: [" << interval[0] << ", " << interval[1] << "]" << endl;
 	double* fibo = fib(target_f_l2, interval[0], interval[1], epsilon);
 	cout << "fibo method D: " << *fibo << endl;
+	cout << "fibo y*: " << ff1(*fibo) << endl;
 	cout << "error fibo method: " << target_f_l2(*fibo) << endl;
 	double* lagr = lag(target_f_l2, interval[0], interval[1], epsilon, 1e-5, 1000);
 	cout<< "lagr method D: "<< *lagr <<endl;
+	cout<< "lagr y*: "<< ff1(*lagr) <<endl;
 	cout<< "error: "<< target_f_l2(*lagr) << endl;
 	cout << "Simulation with optimal D:" << endl;
 	f_l2_print(*lagr);
