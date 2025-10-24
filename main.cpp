@@ -22,7 +22,7 @@ int main()
 {
 	try
 	{
-		lab1();
+		lab3();
 	}
 	catch (string EX_INFO)
 	{
@@ -110,7 +110,8 @@ void lab2()
 
 void lab3()
 {
-
+	matrix x0(2, new double[2]{0.9, 0.5});
+	cout << target_func_l3(x0) << endl;
 }
 
 void lab4()

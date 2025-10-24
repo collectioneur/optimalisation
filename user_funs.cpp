@@ -1,4 +1,5 @@
 #include"user_funs.h"
+#include<cmath>
 
 #define _USE_MATH_DEFINES
 #define M_PI 3.14159265358979323846
@@ -111,4 +112,13 @@ double target_f_l2(double x)
 	double target_temp = 50.0;
 	ans = pow(ans - target_temp, 2);
 	return ans;
+}
+
+matrix target_func_l3(matrix x)
+{
+	matrix y(1,1);
+	double x1 = x(0);
+	double x2 = x(1);
+	y(0) = x1*x1 + x2*x2 - cos(2.5*M_PI*x1) - cos(2.5*M_PI*x2) + 2.0;
+	return y;
 }
