@@ -50,3 +50,65 @@ matrix ff1T(matrix x, matrix ud1, matrix ud2)
 	return y;
 }
 //
+
+// Lab 2
+matrix l2_dvdt(double t,matrix Y, matrix ud1, matrix ud2)
+{
+	double P_A = 2;
+	double V_A = Y(0);
+	double P_B = 1;
+	double V_B = Y(1);
+	double T_A = 95;
+	double T_B = Y(2);
+	double T_B_in = 20;
+	double F_B_in = 0.01; // m3/s
+	double D_a = ud1(0);
+	double D_b = 0.00365665;
+
+	double a = 0.98;
+	double b = 0.63;
+	double g = 9.81;
+
+	matrix dY = matrix(3, 1);
+	dY(0) = -a*b*D_a*sqrt(2*g*(V_A)/P_A);
+	dY(1) = -a*b*D_b*sqrt(2*g*(V_B)/P_B) + a*b*D_a*sqrt(2*g*(V_A)/P_A) + F_B_in;
+
+	double F_A_out = a*b*D_a*sqrt(2*g*(V_A)/P_A);
+	dY(2) = F_B_in*(T_B_in - T_B)/V_B + F_A_out*(T_A - T_B)/V_B;
+	return dY;
+}
+
+matrix f_l2(double x, double t) {
+	x *= 0.0001;
+	return solve_ode(l2_dvdt, 0, 1, t, matrix(3, new double[3]{5, 1, 20.0}), matrix(1, new double[1]{x}))[1];
+}
+
+double f_l2_max(double x)
+{
+	int t = 500;
+	matrix res = f_l2(x, t);
+	double ans = 0.0;
+	for(int i = 0; i < t; ++i)
+	{
+		if(res(i, 2) > ans) {
+			ans = res(i, 2);
+		}
+	}
+	return ans;
+}
+
+void f_l2_print(double x)
+{
+	int t = 500;
+	cout << f_l2(x, t) << endl;
+	return;
+}
+
+double target_f_l2(double x)
+{
+	double ans = f_l2_max(x);
+
+	double target_temp = 50.0;
+	ans = pow(ans - target_temp, 2);
+	return ans;
+}
