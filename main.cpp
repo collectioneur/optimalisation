@@ -23,7 +23,7 @@ int main()
 {
 	try
 	{
-		lab3();
+		lab2();
 	}
 	catch (string EX_INFO)
 	{
@@ -173,13 +173,19 @@ void lab2()
 	double epsilon = 1e-2;     
 	double* interval = expansion(target_f_l2, x0, d, alpha, 100);
 	cout << "Found interval: [" << interval[0] << ", " << interval[1] << "]" << endl;
+	extern int fib_calls;
 	double* fibo = fib(target_f_l2, interval[0], interval[1], epsilon);
+	int iter_fib = fib_calls;
 	cout << "fibo method D: " << *fibo << endl;
 	cout << "fibo y*: " << ff1(*fibo) << endl;
+	cout<< "fibo iters: " << iter_fib << endl;
 	cout << "error fibo method: " << target_f_l2(*fibo) << endl;
+	extern int lag_calls;
 	double* lagr = lag(target_f_l2, interval[0], interval[1], epsilon, 1e-5, 1000);
+	int iter_lag = lag_calls;
 	cout<< "lagr method D: "<< *lagr <<endl;
 	cout<< "lagr y*: "<< ff1(*lagr) <<endl;
+	cout<< "lagr iters: "<< iter_lag << endl;
 	cout<< "error: "<< target_f_l2(*lagr) << endl;
 	cout << "Simulation with optimal D:" << endl;
 	f_l2_print(*lagr);

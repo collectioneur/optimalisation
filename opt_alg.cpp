@@ -98,6 +98,7 @@ int fib_calls = 0;
 double* fib(double(*ff)(double), double a, double b, double epsilon)
 {
     try {
+		fib_calls = 0;
         std::vector<unsigned long long> F = {0, 1};
         while (F.back() < static_cast<unsigned long long>((b - a) / epsilon))
             F.push_back(F[F.size() - 1] + F[F.size() - 2]);
