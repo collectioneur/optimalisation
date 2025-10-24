@@ -104,7 +104,8 @@ double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1,
 		while (F.back() < static_cast<unsigned long long>((b - a) / epsilon))
 			F.push_back(F[F.size() - 1] + F[F.size() - 2]);
 		int N = static_cast<int>(F.size()) - 1;
-
+		
+		int iterations = 0;
 
 		double x1 = a + (double)F[N - 2] / F[N] * (b - a);
 		double x2 = a + (double)F[N - 1] / F[N] * (b - a);
@@ -131,7 +132,9 @@ double* fib(double(*ff)(double), double a, double b, double epsilon, matrix ud1,
 				x1 = a + (double)F[N - k - 2] / F[N - k] * (b - a);
 				f1 = ff(x1);
 			}
+			iterations++;
 		}
+		cout<<"Number of iterations: "<< iterations << endl;
 		double* xmin_val = new double((x1 + x2) / 2.0);
 		return xmin_val;
 	}
@@ -148,7 +151,7 @@ solution lag(matrix(*ff)(matrix, matrix, matrix), double a, double b, double eps
 	{
 		solution Xopt;
 		
-
+		int iterations = 0;
 		int i = 0;
 		double a_i = a, b_i = b;
 		double c_i = (a + b) / 2.0;
@@ -244,6 +247,7 @@ solution lag(matrix(*ff)(matrix, matrix, matrix), double a, double b, double eps
 				return Xopt;
 			}
 			
+			iterations++;
 		} while ((b_i - a_i) >= epsilon && (i == 1 || std::fabs(d_i - d_prev) >= gamma)); 
 		
 		
@@ -251,6 +255,8 @@ solution lag(matrix(*ff)(matrix, matrix, matrix), double a, double b, double eps
 		Xopt.x(0) = d_i;
 		Xopt.fit_fun(ff, ud1, ud2);
 		Xopt.flag = 1; 
+
+		cout<<"Number of iterations: "<< iterations << endl;
 		
 		return Xopt;
 	}

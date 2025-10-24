@@ -68,6 +68,10 @@ void lab0()
 
 void lab1()
 {
+	
+
+	cout<< "x0: "<< x0 <<endl;
+	
 	double epsilon = 1e-2;	
 	// Expansion
 	double* p = expansion(ff1, 90, 1, 1.2, 1000);
