@@ -122,3 +122,30 @@ matrix target_func_l3(matrix x, matrix ud1, matrix ud2)
 	y(0) = x1*x1 + x2*x2 - cos(2.5*M_PI*x1) - cos(2.5*M_PI*x2) + 2.0;
 	return y;
 }
+
+matrix target_func_real_l3(double t, matrix Y, matrix ud1, matrix ud2)
+{
+    matrix dY(2,1);
+
+    double alpha = Y(0);
+    double omega = Y(1);
+    double l = 2.0;
+    double m1 = 1.0;
+    double m2 = 5.0;
+    double b = 0.25;
+
+    double I = (m1 + m2) * l * l;  
+
+    double k1 = ud2(0);
+    double k2 = ud2(1);
+
+    double alpha_ref = M_PI;
+    double omega_ref = 0.0;
+
+    double M = k1 * (alpha_ref - alpha) + k2 * (omega_ref - omega);
+
+    dY(0) = omega;
+    dY(1) = (M - b * omega) / I;
+
+    return dY;
+}

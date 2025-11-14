@@ -8,6 +8,7 @@ Akademia G�rniczo-Hutnicza
 Data ostatniej modyfikacji: 30.09.2025
 *********************************************/
 
+#include "ode_solver.h"
 #include"opt_alg.h"
 
 void lab0();
@@ -239,6 +240,13 @@ void lab3()
 	cout << "x* = [" << result.x(0) << ", " << result.x(1) << "]" << endl;
 	cout << "f(x*) = " << result.y(0) << endl;
 	cout << "Calls: " << solution::f_calls << endl;
+
+    matrix Y0(2,1);
+    Y0(0) = 0.0;
+    Y0(1) = 0.0;  
+
+    matrix* Y = solve_ode(target_func_real_l3, 0, 0.1, 100, Y0, NAN, NAN);
+    
 }
 
 void lab4()
