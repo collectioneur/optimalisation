@@ -12,4 +12,5 @@ double target_f_l2(double);
 void f_l2_print(double);
 matrix target_func_l3(matrix, matrix = NAN, matrix = NAN);
 matrix target_func_real_l3(double, matrix,  matrix = NAN, matrix = NAN);
+matrix Q_real_l3(matrix, matrix = NAN, matrix = NAN);
 

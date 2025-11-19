@@ -130,11 +130,11 @@ matrix target_func_real_l3(double t, matrix Y, matrix ud1, matrix ud2)
     double alpha = Y(0);
     double omega = Y(1);
     double l = 2.0;
-    double m1 = 1.0;
-    double m2 = 5.0;
+    double m_r = 1.0;  
+    double m_w = 5.0;  
     double b = 0.25;
 
-    double I = (m1 + m2) * l * l;  
+    double I = (1.0/3.0) * m_r * l * l + m_w * l * l;
 
     double k1 = ud2(0);
     double k2 = ud2(1);
@@ -149,3 +149,53 @@ matrix target_func_real_l3(double t, matrix Y, matrix ud1, matrix ud2)
 
     return dY;
 }
+
+matrix Q_real_l3(matrix x, matrix ud1, matrix ud2)
+{	
+    matrix y(1, 1);
+    
+    double k1 = x(0);
+    double k2 = x(1);
+	
+    double t0 = 0.0;
+    double dt = 0.1;
+    double t_end = 100.0;
+    
+    matrix Y0(2, 1);
+    Y0(0) = 0.0;  
+    Y0(1) = 0.0;  
+    
+    matrix k_params(2, 1);
+    k_params(0) = k1;
+    k_params(1) = k2;
+
+    matrix* Y = solve_ode(target_func_real_l3, t0, dt, t_end, Y0, NAN, k_params);
+    
+    double alpha_ref = M_PI;
+    double omega_ref = 0.0;
+	
+    int n = get_len(Y[0]);
+    double Q = 0.0;
+    
+    for (int i = 0; i < n; ++i)
+    {
+        double alpha_t = Y[1](i, 0);  
+        double omega_t = Y[1](i, 1);  
+        
+        double M_t = k1 * (alpha_ref - alpha_t) + k2 * (omega_ref - omega_t);
+        
+        double term1 = 10.0 * pow(alpha_ref - alpha_t, 2);
+        double term2 = pow(omega_ref - omega_t, 2);
+        double term3 = pow(M_t, 2);
+
+        Q += (term1 + term2 + term3) * dt;
+    }
+    
+    y(0) = Q;
+
+    delete[] Y;
+    
+    return y;
+}
+	
+

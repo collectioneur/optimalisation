@@ -24,7 +24,7 @@ int main()
 {
 	try
 	{
-		lab2();
+		lab3();
 	}
 	catch (string EX_INFO)
 	{
@@ -229,25 +229,74 @@ void lab2()
 
 void lab3()
 {
-	matrix x0(2, new double[2]{1.0, 0.0});
-	matrix s0(2, new double[2]{1.0, 1.0});
-	double alpha = 1.2, beta = 0.8, epsilon = 1e-4;
-	int Nmax = 200;
-	
-	solution::clear_calls();
-	solution result = Rosen(target_func_l3, x0, s0, alpha, beta, epsilon, Nmax);
-	
-	cout << "x* = [" << result.x(0) << ", " << result.x(1) << "]" << endl;
-	cout << "f(x*) = " << result.y(0) << endl;
-	cout << "Calls: " << solution::f_calls << endl;
+    matrix x0(2, new double[2]{1.0, 0.0});
+    matrix s0(2, new double[2]{1.0, 1.0});
+    double alpha = 1.2, beta = 0.8, epsilon = 1e-4;
+    int Nmax = 200;
+
+    //rosenbrock testowa funkcja - podobnie zrobić z metodą HJ
+    solution::clear_calls();
+    solution result = Rosen(target_func_l3, x0, s0, alpha, beta, epsilon, Nmax);
+
+    
+    cout << "Wywołanie testowe dla metody Rosenbrocka" << endl;
+    cout << "x = [" << result.x(0) << ", " << result.x(1) << "]" << endl;
+    cout << "f(x) = " << result.y(0) << endl;
+    cout << "Calls: " << solution::f_calls << endl << endl;
+
+
+    //test porpawności dla funkcji Q(Q_real_l3)
+    cout << "Test poprawności dla Q" << endl;
+
+    matrix test_k(2, new double[2]{5.0, 5.0});
+    matrix Q = Q_real_l3(test_k, NAN, test_k);
+
+    cout << "Q(k1=5, k2=5) = " << Q(0) << endl;
+
+    cout << "Oczekiwana wartość(ze sprawka): 775.229" << endl << endl;
+
+    //rozwozanie problemu rzeczywistego -suzkanie najlepszego k1 i k2 - metoda rosenbrocka - podobnie z HJ
+    cout << "Optymalizacja problemu rzeczywistego metoda Rosenbrocka" << endl;
+    matrix k0(2, new double[2]{10.0, 10.0});
+    matrix s0_real(2, new double[2]{2.0, 2.0});
+    epsilon = 1e-2;
+    Nmax = 100;
+
+    solution::clear_calls();
+    solution result_real = Rosen(Q_real_l3, k0, s0_real, alpha, beta, epsilon, Nmax);
+
+    cout << "k1 = " << result_real.x(0) << endl;
+    cout << "k2 = " << result_real.x(1) << endl;
+    cout << "Q(k1,k2) = " << result_real.y(0) << endl;
+    cout << "Calls: " << solution::f_calls << endl << endl;
+
+    //symulcja z czasem z otpymalnymi parametrami
+    cout << "Symulacja z optymalnymi parametrami" << endl;
 
     matrix Y0(2,1);
     Y0(0) = 0.0;
-    Y0(1) = 0.0;  
+    Y0(1) = 0.0;
 
-    matrix* Y = solve_ode(target_func_real_l3, 0, 0.1, 100, Y0, NAN, NAN);
+    matrix k_opt(2,1);
+    k_opt(0) = result_real.x(0);
+    k_opt(1) = result_real.x(1);
+
+    matrix* Y = solve_ode(target_func_real_l3, 0, 0.1, 100, Y0, NAN, k_opt);
+
+    ofstream Sout("symulacja_lab3.csv");
+    Sout << "t,alpha,omega\n";  
+    int n = get_len(Y[0]);
     
+    for (int i = 0; i < n; ++i)
+    {
+        Sout << Y[0](i) << "," << Y[1](i, 0) << "," << Y[1](i, 1) << "\n";
+    }
+    Sout.close();
+    cout << "zapisano do symulacja_lab3.csv" << endl;
+
+    delete[] Y;
 }
+
 
 void lab4()
 {
