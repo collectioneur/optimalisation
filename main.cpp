@@ -24,7 +24,7 @@ int main()
 {
 	try
 	{
-		lab3();
+		lab4();
 	}
 	catch (string EX_INFO)
 	{
@@ -334,7 +334,315 @@ void lab3()
 
 void lab4()
 {
-	cout << HJ(target_func_l3, matrix(2, new double[2]{-0.1, 0.2}), 1.0, 0.3, 1e-2, 1000, NAN, NAN).x << endl;
+    // cout << "=== LAB 4 - Testowa funkcja celu z ograniczeniami ===" << endl << endl;
+    
+    // // Utworzenie pliku CSV dla wyników
+    // ofstream results_file("lab4_results.csv");
+    // results_file << "a,i,x1_start,x2_start,x1_ext,x2_ext,r_ext,y_ext,calls_ext,x1_int,x2_int,r_int,y_int,calls_int\n";
+    
+    // ofstream stats_file("lab4_statistics.csv");
+    // stats_file << "a,penalty_type,avg_x1,avg_x2,avg_r,avg_y,avg_calls,success_rate\n";
+    
+    // // Parametry optymalizacji
+    // double epsilon = 1e-3;
+    // int Nmax = 10000;
+    // double values_a[] = {4.0, 4.4934, 5.0};
+    // int num_tests = 100; // Полные 100 тестов для каждого параметра a
+    
+    // srand(time(NULL));
+    
+    // // Test funkcji celu
+    // cout << "Test funkcji celu f(x1, x2):" << endl;
+    // matrix test_point(2, new double[2]{1.0, 1.0});
+    // matrix f_test = ff4T(test_point, NAN, NAN);
+    // cout << "f(1, 1) = " << f_test(0) << endl << endl;
+    
+    // // Przeprowadź 100 testów dla każdej wartości a
+    // for (int k = 0; k < 3; k++) {
+    //     double a = values_a[k];
+    //     cout << "=== Testowanie dla a = " << a << " ===" << endl;
+        
+    //     // Statystyki dla zewnętrznej funkcji kary
+    //     double sum_x1_ext = 0.0, sum_x2_ext = 0.0, sum_f_ext = 0.0, sum_calls_ext = 0.0, sum_r_ext = 0.0;
+    //     int success_count_ext = 0;
+        
+    //     // Statystyki dla wewnętrznej funkcji kary
+    //     double sum_x1_int = 0.0, sum_x2_int = 0.0, sum_f_int = 0.0, sum_calls_int = 0.0, sum_r_int = 0.0;
+    //     int success_count_int = 0;
+        
+    //     for (int i = 0; i < num_tests; i++) {
+    //         // Generowanie losowego punktu startowego w obszarze dopuszczalnym dla wewnętrznej funkcji kary
+    //         matrix x0(2, 1);
+    //         bool valid_point = false;
+    //         int attempts = 0;
+            
+    //         while (!valid_point && attempts < 1000) {
+    //             // Generuj punkt w większym obszarze dla bardziej różnorodnych punktów startowych
+    //             double r = (a - 0.5) * ((double)rand() / RAND_MAX + 0.2); // Więcej różnorodności w promieniu
+    //             double theta = 2.0 * M_PI * ((double)rand() / RAND_MAX);
+    //             x0(0) = r * cos(theta) + 1.3 + 0.5 * ((double)rand() / RAND_MAX); // Większa losowość
+    //             x0(1) = r * sin(theta) + 1.3 + 0.5 * ((double)rand() / RAND_MAX);
+                
+    //             // Sprawdź ograniczenia (punkt musi być bezpiecznie w środku dla wewnętrznej funkcji kary)
+    //             if (x0(0) >= 1.1 && x0(1) >= 1.1 && sqrt(x0(0)*x0(0) + x0(1)*x0(1)) <= a - 0.2) {
+    //                 valid_point = true;
+    //             }
+    //             attempts++;
+    //         }
+            
+    //         if (!valid_point) {
+    //             cout << "Nie można znaleźć poprawnego punktu startowego dla testu " << i+1 << endl;
+    //             continue;
+    //         }
+            
+    //         // Test zewnętrznej funkcji kary - bezpośrednio sym_NM
+    //         matrix penalty_params_ext(3, 1);
+    //         penalty_params_ext(0) = 0.0;  // zewnętrzna funkcja kary
+    //         penalty_params_ext(1) = a;    // parametr a  
+    //         penalty_params_ext(2) = 10.0; // współczynnik c (zmniejszony dla więcej iteracji)
+            
+    //         solution::clear_calls();
+    //         matrix pen_params_ext(2, 1);
+    //         pen_params_ext(0) = 0.0;  // внешняя функция кары
+    //         pen_params_ext(1) = a;    // параметр a
+    //         solution result_ext = pen(ff4T, x0, 1.0, 10.0, epsilon, Nmax, pen_params_ext, NAN);
+            
+    //         double r_ext = sqrt(result_ext.x(0)*result_ext.x(0) + result_ext.x(1)*result_ext.x(1));
+    //         bool converged_ext = (result_ext.flag == 1);
+    //         int calls_ext = solution::f_calls;
+            
+    //         // Aktualizuj statystyki zewnętrznej funkcji kary
+    //         if (converged_ext) {
+    //             sum_x1_ext += result_ext.x(0);
+    //             sum_x2_ext += result_ext.x(1);
+    //             sum_f_ext += result_ext.y(0);
+    //             sum_calls_ext += calls_ext;
+    //             sum_r_ext += r_ext;
+    //             success_count_ext++;
+    //         }
+            
+    //         // Test wewnętrznej funkcji kary - tym samym punktem startowym
+    //         matrix penalty_params_int(3, 1);
+    //         penalty_params_int(0) = 1.0;  // wewnętrzna funkcja kary
+    //         penalty_params_int(1) = a;    // parametr a
+    //         penalty_params_int(2) = 0.1;  // współczynnik c (zmniejszony dla więcej iteracji)
+            
+    //         solution::clear_calls();
+    //         matrix pen_params_int(2, 1);
+    //         pen_params_int(0) = 1.0;  
+    //         pen_params_int(1) = a;    
+    //         solution result_int = pen(ff4T, x0, 1.0, 0.1, epsilon, Nmax, pen_params_int, NAN);
+            
+    //         double r_int = sqrt(result_int.x(0)*result_int.x(0) + result_int.x(1)*result_int.x(1));
+    //         bool converged_int = (result_int.flag == 1);
+    //         int calls_int = solution::f_calls;
+            
+    //         // Aktualizuj statystyki wewnętrznej funkcji kary
+    //         if (converged_int) {
+    //             sum_x1_int += result_int.x(0);
+    //             sum_x2_int += result_int.x(1);
+    //             sum_f_int += result_int.y(0);
+    //             sum_calls_int += calls_int;
+    //             sum_r_int += r_int;
+    //             success_count_int++;
+    //         }
+            
+    //         // Zapisz jedną linię z obydwoma wynikami
+    //         results_file << a << "," << i+1 << "," << x0(0) << "," << x0(1) << ",";
+            
+    //         if (converged_ext) {
+    //             results_file << result_ext.x(0) << "," << result_ext.x(1) << "," << r_ext << "," 
+    //                        << result_ext.y(0) << "," << calls_ext;
+    //         } else {
+    //             results_file << "NA,NA,NA,NA,NA";
+    //         }
+            
+    //         results_file << ",";
+            
+    //         if (converged_int) {
+    //             results_file << result_int.x(0) << "," << result_int.x(1) << "," << r_int << "," 
+    //                        << result_int.y(0) << "," << calls_int;
+    //         } else {
+    //             results_file << "NA,NA,NA,NA,NA";
+    //         }
+            
+    //         results_file << "\n";
+            
+    //         if ((i+1) % 20 == 0) {
+    //             cout << "Ukończono " << i+1 << "/" << num_tests << " testów dla a=" << a << endl;
+    //         }
+    //     }
+        
+    //     // Zapisz statystyki do pliku
+    //     if (success_count_ext > 0) {
+    //         stats_file << a << ",external," 
+    //                   << sum_x1_ext/success_count_ext << "," << sum_x2_ext/success_count_ext << ","
+    //                   << sum_r_ext/success_count_ext << "," << sum_f_ext/success_count_ext << ","
+    //                   << sum_calls_ext/success_count_ext << "," << (double)success_count_ext/num_tests << "\n";
+    //     }
+        
+    //     if (success_count_int > 0) {
+    //         stats_file << a << ",internal," 
+    //                   << sum_x1_int/success_count_int << "," << sum_x2_int/success_count_int << ","
+    //                   << sum_r_int/success_count_int << "," << sum_f_int/success_count_int << ","
+    //                   << sum_calls_int/success_count_int << "," << (double)success_count_int/num_tests << "\n";
+    //     }
+        
+    //     cout << "Ukończono wszystkie testy dla a=" << a << endl;
+    //     cout << "Zewnętrzna funkcja kary: " << success_count_ext << "/" << num_tests << " udanych" << endl;
+    //     cout << "Wewnętrzna funkcja kary: " << success_count_int << "/" << num_tests << " udanych\n" << endl;
+    // }
+    
+    // // Test metody Nelder-Mead dla funkcji testowej bez ograniczeń
+    // cout << "=== Test metody sympleks Nelder-Mead (bez ograniczeń) ===" << endl;
+    // matrix x0_nm(2, new double[2]{2.0, 2.0});
+    
+    // solution::clear_calls();
+    // solution result_nm = sym_NM(ff4T, x0_nm, 0.5, 1.0, 0.5, 2.0, 0.5, epsilon, Nmax, NAN, NAN);
+    
+    // cout << "Punkt startowy: [" << x0_nm(0) << ", " << x0_nm(1) << "]" << endl;
+    // cout << "Wynik: x* = [" << result_nm.x(0) << ", " << result_nm.x(1) << "]" << endl;
+    // cout << "f(x*) = " << result_nm.y(0) << endl;
+    // cout << "Liczba wywołań: " << solution::f_calls << endl;
+    // cout << "r = " << sqrt(result_nm.x(0)*result_nm.x(0) + result_nm.x(1)*result_nm.x(1)) << endl;
+    
+    // // Zamknij pliki CSV
+    // results_file.close();
+    // stats_file.close();
+    // cout << "Zapisano wyniki do lab4_results.csv i lab4_statistics.csv\n" << endl;
+    
+    // === PROBLEM RZECZYWISTY ===
+    cout << "=== PROBLEM RZECZYWISTY - Lot piłki z efektem Magnusa ===" << endl;
+
+    // ---------------- Parametry metody funkcji kary ----------------
+    const double penaltyC0           = 2.0;      // początkowy współczynnik kary
+    const double penaltyScale        = 20.0;     // współczynnik skalowania c
+    const double penaltyEps          = 1e-10;     // dokładność metody kary
+    const int    penaltyMaxCalls     = 10000;     // maks. liczba wywołań funkcji celu
+    const int    penaltyMaxOuterIter = 50;       // maks. liczba pętli zewnętrznych (aktualizacji c)
+
+    // Punkt startowy: [v0x, omega]
+    matrix x0_real(2, new double[2]{0.0, 0.0});
+
+    // ---------------- Optymalizacja (funkcja kary + sym_NM) ----------------
+    matrix x_curr_real = x0_real;
+    double c_curr      = penaltyC0;
+
+    // solution::clear_calls();
+
+    for (int outer = 0; outer < penaltyMaxOuterIter &&
+                        solution::f_calls < penaltyMaxCalls; ++outer)
+    {
+        // bieżące parametry kary
+        matrix penalty_params_real(1, 1);
+        penalty_params_real(0) = c_curr;
+
+        // minimalizacja F(x) = f(x) + c * S(x)
+        solution res = sym_NM(
+            penalty_objective_function_lab4R,
+            x_curr_real,          // punkt startowy dla tej iteracji
+            1.0, 1.0, 0.5, 2.0,   // parametry N-M (alfa, beta, gamma, delta)
+            0.5,                  // sigma
+            penaltyEps / 10.0,    // dokładność wewnętrznego N-M
+            penaltyMaxCalls / penaltyMaxOuterIter,  // limit wywołań na 1 iterację
+            penalty_params_real,  // parametry funkcji kary
+            NAN
+        );
+
+        // warunek stopu metody funkcji kary
+        if (norm(res.x - x_curr_real) < penaltyEps) {
+            x_curr_real = res.x;
+            break;
+        }
+
+        x_curr_real = res.x;
+        c_curr *= penaltyScale;
+    }
+
+        // ---------------- Wyniki optymalizacji ----------------
+    cout << "\n--- Wyniki optymalizacji ---" << endl;
+    cout << "Optymalne parametry:" << endl;
+    cout << "v0x*   = " << x_curr_real(0) << " m/s" << endl;
+    cout << "omega* = " << x_curr_real(1) << " rad/s" << endl;
+
+    // rzeczywista wartość funkcji celu (bez kary, minimalizowaliśmy -x_end)
+    // solution::clear_calls();
+    matrix final_result = ff4R(x_curr_real, NAN, NAN);
+    double x_end_opt    = -final_result(0);
+    int f_calls_opt     = solution::f_calls;  // liczba wywołań funkcji celu dla optymalizacji
+
+    cout << "x_end* = " << x_end_opt << " m" << endl;
+    cout << "Liczba wywołań funkcji celu: " << f_calls_opt << endl;
+
+    // =================== Symulacja trajektorii ===================
+
+    // warunki początkowe: [x0, y0, vx0, vy0]
+    matrix Y0_opt(4, 1);
+    Y0_opt(0) = 0.0;               // x0
+    Y0_opt(1) = 100.0;             // y0
+    Y0_opt(2) = x_curr_real(0);    // vx0 = v0x*
+    Y0_opt(3) = 0.0;               // vy0
+
+    // parametry ruchu: [v0x, omega]
+    matrix motion_params_opt(2, 1);
+    motion_params_opt(0) = x_curr_real(0);
+    motion_params_opt(1) = x_curr_real(1);
+
+    // rozwiązywanie ODE
+    matrix* Y_opt = solve_ode(
+        ball_motion_l4,
+        0.0,    // t0
+        0.01,   // dt
+        7.0,    // t_end
+        Y0_opt,
+        NAN,
+        motion_params_opt
+    );
+
+    // =================== Obliczenie x* dla y = 50 m ===================
+    double x_at_y50 = 0.0;
+    int n_opt = get_len(Y_opt[0]);
+
+    for (int i = 0; i < n_opt - 1; ++i) {
+        double y1 = Y_opt[1](i, 1);
+        double y2 = Y_opt[1](i + 1, 1);
+
+        if ((y1 >= 50.0 && y2 <= 50.0) || (y1 <= 50.0 && y2 >= 50.0)) {
+            double t1 = Y_opt[0](i);
+            double t2 = Y_opt[0](i + 1);
+            double x1 = Y_opt[1](i, 0);
+            double x2 = Y_opt[1](i + 1, 0);
+
+            // interpolacja czasu dla y = 50
+            double t_interp = t1 + (50.0 - y1) / (y2 - y1) * (t2 - t1);
+            // interpolacja x po czasie
+            x_at_y50 = x1 + (t_interp - t1) / (t2 - t1) * (x2 - x1);
+            break;
+        }
+    }
+
+    // =================== CSV z wynikami optymalizacji ===================
+    ofstream results_file("lab4_problem_rzeczywisty.csv");
+    results_file << "v0x(0),omega(0),v0x*,omega*,xend*,x* dla y = 50m,Liczba wywołań funkcji celu\n";
+    results_file << x0_real(0) << "," << x0_real(1) << ","
+                << x_curr_real(0) << "," << x_curr_real(1) << ","
+                << x_end_opt << "," << x_at_y50 << "," << f_calls_opt << "\n";
+    results_file.close();
+
+    // =================== CSV z trajektorią ===================
+    ofstream trajectory_file("lab4_trajectory.csv");
+    trajectory_file << "t,x,y\n";
+
+    for (int i = 0; i < n_opt; ++i) {
+        if (Y_opt[1](i, 1) >= 0.0) { // tylko nad ziemią
+            trajectory_file << Y_opt[0](i)   << ","
+                            << Y_opt[1](i,0) << ","  // x
+                            << Y_opt[1](i,1) << "\n";  // y
+        }
+    }
+    trajectory_file.close();
+
+    delete[] Y_opt;
 }
 
 void lab5()

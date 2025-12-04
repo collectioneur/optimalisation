@@ -25,3 +25,8 @@ solution golden(matrix(*ff)(matrix, matrix, matrix), double a, double b, double 
 solution Powell(matrix(*ff)(matrix, matrix, matrix), matrix x0, double epsilon, int Nmax, matrix ud1 = NAN, matrix ud2 = NAN); // throw (string);
 
 solution EA(matrix(*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, int mi, int lambda, matrix sigma0, double epsilon, int Nmax, matrix ud1 = NAN, matrix ud2 = NAN); // throw (string);
+
+// Lab 4 - funkcje pomocnicze
+matrix calculate_constraints_lab4R(matrix x);
+matrix penalty_objective_function_lab4R(matrix x, matrix ud1, matrix ud2 = NAN);
+matrix penalty_objective_function(matrix x, matrix ud1, matrix ud2 = NAN);

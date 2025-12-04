@@ -353,11 +353,178 @@ solution Rosen(matrix(*ff)(matrix, matrix, matrix), matrix x0, matrix s0, double
 	}
 }
 
+// Funkcja do obliczania ograniczen dla lab4
+matrix calculate_constraints_lab4(matrix x, double a)
+{
+    matrix g(3, 1);
+    double x1 = x(0);
+    double x2 = x(1);
+    
+    g(0) = -x1 + 1;  // g1(x1) = -x1 + 1 ≤ 0
+    g(1) = -x2 + 1;  // g2(x2) = -x2 + 1 ≤ 0
+    g(2) = sqrt(x1*x1 + x2*x2) - a;  // g3(x1,x2) = sqrt(x1² + x2²) - a ≤ 0
+    
+    return g;
+}
+
+// Zewnętrzna funkcja kary
+double external_penalty_function(matrix g)
+{
+    double S = 0.0;
+    for (int i = 0; i < 3; ++i) {
+        double constraint_val = g(i);
+        if (constraint_val > 0) {  // max(0, gi)
+            S += constraint_val * constraint_val;
+        }
+    }
+    return S;
+}
+
+// Wewnętrzna funkcja kary
+double internal_penalty_function(matrix g)
+{
+    double S = 0.0;
+    for (int i = 0; i < 3; ++i) {
+        double constraint_val = g(i);
+        if (constraint_val >= 0) {
+            return 1e10;  // Punkt niedopuszczalny
+        }
+        S -= 1.0 / constraint_val;  // -1/gi dla gi < 0
+    }
+    return S;
+}
+
+// Funkcja pomocnicza łącząca funkcję celu z funkcją kary
+matrix penalty_objective_function(matrix x, matrix ud1, matrix ud2)
+{
+    matrix y(1, 1);
+    
+    // ud1(0) - typ funkcji kary (0 - zewnętrzna, 1 - wewnętrzna)
+    // ud1(1) - parametr a dla ograniczenia 
+    // ud1(2) - współczynnik c
+    
+    int penalty_type = (int)ud1(0);
+    double a = ud1(1);
+    double c = ud1(2);
+    
+    // Oblicz funkcję celu
+    matrix f_val = ff4T(x, NAN, NAN);
+    
+    // Oblicz ograniczenia
+    matrix g = calculate_constraints_lab4(x, a);
+    
+    // Oblicz funkcję kary
+    double S = 0.0;
+    if (penalty_type == 0) {
+        S = external_penalty_function(g);
+    } else {
+        S = internal_penalty_function(g);
+    }
+    
+    // F(x) = f(x) + c*S(x)
+    y(0) = f_val(0) + c * S;
+    
+    return y;
+}
+
+// Funkcja do obliczania ograniczeń dla problem rzeczywisty lab4
+matrix calculate_constraints_lab4R(matrix x)
+{
+    matrix g(4, 1);
+    double v0x = x(0);
+    double omega = x(1);
+    
+    g(0) = -v0x - 10.0;   // v0x >= -10  => -v0x - 10 <= 0
+    g(1) = v0x - 10.0;    // v0x <= 10   => v0x - 10 <= 0
+    g(2) = -omega - 10.0; // omega >= -10 => -omega - 10 <= 0
+    g(3) = omega - 10.0;  // omega <= 10  => omega - 10 <= 0
+    
+    return g;
+}
+
+// Zewnętrzna funkcja kary dla problem rzeczywisty
+double external_penalty_function_lab4R(matrix g)
+{
+    double S = 0.0;
+    for (int i = 0; i < 4; ++i) {
+        double constraint_val = g(i);
+        if (constraint_val > 0) {  // max(0, gi)
+            S += constraint_val * constraint_val;
+        }
+    }
+    return S;
+}
+
+// Funkcja pomocnicza łącząca funkcję celu z funkcją kary dla problem rzeczywisty
+matrix penalty_objective_function_lab4R(matrix x, matrix ud1, matrix ud2)
+{
+    matrix y(1, 1);
+    
+    // ud1(0) - współczynnik c
+    double c = ud1(0);
+    
+    // Oblicz funkcję celu (ff4R)
+    matrix f_val = ff4R(x, NAN, NAN);
+    
+    // Oblicz ograniczenia
+    matrix g = calculate_constraints_lab4R(x);
+    
+    // Oblicz funkcję kary
+    double S = external_penalty_function_lab4R(g);
+    
+    // F(x) = f(x) + c*S(x)
+    y(0) = f_val(0) + c * S;
+    
+    return y;
+}
+
 solution pen(matrix(*ff)(matrix, matrix, matrix), matrix x0, double c, double dc, double epsilon, int Nmax, matrix ud1, matrix ud2)
 {
 	try {
 		solution Xopt;
-		//Tu wpisz kod funkcji
+		
+        // ud1 zawiera parametry:
+        // ud1(0) - typ funkcji kary (0 - zewnętrzna, 1 - wewnętrzna) 
+        // ud1(1) - parametr a dla ograniczenia
+        // ud2 może zawierać dodatkowe parametry dla sym_NM
+        
+        matrix x_prev = x0;
+        matrix x_curr = x0;
+        double c_curr = c;
+        int iter = 0;
+        
+        do {
+            x_prev = x_curr;
+            
+            // Przygotuj parametry dla funkcji penalty
+            matrix penalty_params(3, 1);
+            penalty_params(0) = ud1(0);  // typ funkcji kary
+            penalty_params(1) = ud1(1);  // parametr a
+            penalty_params(2) = c_curr;  // bieżący współczynnik c
+            
+            // Wywołaj metodę sym_NM dla funkcji F(x) = f(x) + c*S(x)
+            solution temp_result = sym_NM(penalty_objective_function, x_prev, 0.5, 1.0, 0.5, 2.0, 0.5, epsilon/10, Nmax/10, penalty_params, ud2);
+            
+            x_curr = temp_result.x;
+            
+            // Aktualizuj współczynnik c
+            c_curr *= dc;
+            iter++;
+            
+            if (solution::f_calls > Nmax) {
+                Xopt.flag = 0;
+                break;
+            }
+            
+        } while (norm(x_curr - x_prev) >= epsilon && iter < 50);
+        
+        Xopt.x = x_curr;
+        Xopt.fit_fun(ff, ud1, ud2);  // Oblicz końcową wartość funkcji celu
+        if (solution::f_calls <= Nmax) {
+            Xopt.flag = 1;
+        } else {
+            Xopt.flag = 0;
+        }
 
 		return Xopt;
 	}
@@ -372,7 +539,130 @@ solution sym_NM(matrix(*ff)(matrix, matrix, matrix), matrix x0, double s, double
 	try
 	{
 		solution Xopt;
-		//Tu wpisz kod funkcji
+		
+        int n = get_len(x0);  // liczba wymiarów
+        
+        // Tworzenie sympleksu początkowego
+        matrix* simplex = new matrix[n + 1];
+        double* f_values = new double[n + 1];
+        
+        // p0 = x(0)
+        simplex[0] = x0;
+        
+        // pi = p0 + s*ei dla i = 1 do n
+        for (int i = 1; i <= n; i++) {
+            simplex[i] = x0;
+            simplex[i](i-1) += s;  // dodaj s do i-tej współrzędnej
+        }
+        
+        // Oblicz wartości funkcji w wierzchołkach sympleksu
+        for (int i = 0; i <= n; i++) {
+            matrix temp_result = ff(simplex[i], ud1, ud2);
+            f_values[i] = temp_result(0);
+        }
+        
+        do {
+            // Znajdź pmin i pmax (min ≠ max)
+            int idx_min = 0, idx_max = 0;
+            for (int i = 0; i <= n; i++) {
+                if (f_values[i] < f_values[idx_min]) idx_min = i;
+                if (f_values[i] > f_values[idx_max]) idx_max = i;
+            }
+            
+            // Jeśli min == max, znajdź drugi największy
+            if (idx_min == idx_max) {
+                for (int i = 0; i <= n; i++) {
+                    if (i != idx_min && f_values[i] > f_values[idx_max]) {
+                        idx_max = i;
+                    }
+                }
+            }
+            
+            // p = (∑i≠max pi) / n
+            matrix p(n, 1, 0.0);
+            for (int i = 0; i <= n; i++) {
+                if (i != idx_max) {
+                    p = p + simplex[i];
+                }
+            }
+            p = p * (1.0 / n);
+            
+            // podb = p + α(p - pmax)
+            matrix p_odb = p + (p - simplex[idx_max]) * alpha;
+            matrix temp_result = ff(p_odb, ud1, ud2);
+            double f_odb = temp_result(0);
+            
+            if (f_odb < f_values[idx_min]) {
+                // pe = p + γ(podb - p)
+                matrix p_e = p + (p_odb - p) * gamma;
+                temp_result = ff(p_e, ud1, ud2);
+                double f_e = temp_result(0);
+                
+                if (f_e < f_odb) {
+                    simplex[idx_max] = p_e;
+                    f_values[idx_max] = f_e;
+                } else {
+                    simplex[idx_max] = p_odb;
+                    f_values[idx_max] = f_odb;
+                }
+            } else {
+                if (f_values[idx_min] <= f_odb && f_odb < f_values[idx_max]) {
+                    simplex[idx_max] = p_odb;
+                    f_values[idx_max] = f_odb;
+                } else {
+                    // pz = p + β(pmax - p)
+                    matrix p_z = p + (simplex[idx_max] - p) * beta;
+                    temp_result = ff(p_z, ud1, ud2);
+                    double f_z = temp_result(0);
+                    
+                    if (f_z >= f_values[idx_max]) {
+                        // Redukcja sympleksu
+                        for (int i = 0; i <= n; i++) {
+                            if (i != idx_min) {
+                                simplex[i] = simplex[idx_min] + (simplex[i] - simplex[idx_min]) * delta;
+                                temp_result = ff(simplex[i], ud1, ud2);
+                                f_values[i] = temp_result(0);
+                            }
+                        }
+                    } else {
+                        simplex[idx_max] = p_z;
+                        f_values[idx_max] = f_z;
+                    }
+                }
+            }
+            
+            if (solution::f_calls > Nmax) {
+                Xopt.flag = 0;
+                break;
+            }
+            
+            // Sprawdź kryterium stopu: maxi=0,…,n ||pmin - pi||2 < ε
+            double max_distance = 0.0;
+            for (int i = 0; i <= n; i++) {
+                double distance = norm(simplex[idx_min] - simplex[i]);
+                if (distance > max_distance) {
+                    max_distance = distance;
+                }
+            }
+            
+            if (max_distance < epsilon) {
+                Xopt.flag = 1;
+                break;
+            }
+            
+        } while (true);
+        
+        // Znajdź najlepszy punkt
+        int idx_min = 0;
+        for (int i = 0; i <= n; i++) {
+            if (f_values[i] < f_values[idx_min]) idx_min = i;
+        }
+        
+        Xopt.x = simplex[idx_min];
+        Xopt.fit_fun(ff, ud1, ud2);
+        
+        delete[] simplex;
+        delete[] f_values;
 
 		return Xopt;
 	}

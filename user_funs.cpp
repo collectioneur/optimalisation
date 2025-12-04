@@ -197,5 +197,206 @@ matrix Q_real_l3(matrix x, matrix ud1, matrix ud2)
     
     return y;
 }
-	
 
+// Lab 4 - testowa funkcja celu
+matrix ff4T(matrix x, matrix ud1, matrix ud2)
+{
+    matrix y(1, 1);
+    double x1 = x(0);
+    double x2 = x(1);
+    
+    // f(x1, x2) = sin(π*sqrt((x1/π)² + (x2/π)²)) / (π*sqrt((x1/π)² + (x2/π)²))
+    double norm_squared = (x1/M_PI)*(x1/M_PI) + (x2/M_PI)*(x2/M_PI);
+    double norm = sqrt(norm_squared);
+    
+    if (norm < 1e-10) {
+        // Gdy norm → 0, sin(π*norm)/(π*norm) → 1
+        y(0) = 1.0;
+    } else {
+        double argument = M_PI * norm;
+        y(0) = sin(argument) / argument;
+    }
+    
+    return y;
+}
+
+// Lab 4 - Problem rzeczywisty - równania ruchu piłki z efektem Magnusa
+matrix ball_motion_l4(double t, matrix Y, matrix ud1, matrix ud2)
+{
+    // Y(0) = x - pozycja pozioma
+    // Y(1) = y - pozycja pionowa  
+    // Y(2) = vx - prędkość pozioma
+    // Y(3) = vy - prędkość pionowa
+    
+    // ud2(0) = v0x - początkowa prędkość pozioma
+    // ud2(1) = omega - rotacja piłki
+    
+    matrix dY(4, 1);
+    
+    // Parametry fizyczne
+    double m = 0.6;        // masa piłki [kg]
+    double r = 0.12;       // promień piłki [m]
+    double g = 9.81;       // przyspieszenie ziemskie [m/s²]
+    double C = 0.47;       // współczynnik oporu
+    double rho = 1.2;      // gęstość powietrza [kg/m³]
+    double S = M_PI * r * r;  // powierzchnia przekroju piłki
+    double omega = ud2(1);    // rotacja piłki [rad/s]
+    
+    double x = Y(0);
+    double y = Y(1);
+    double vx = Y(2);
+    double vy = Y(3);
+    
+    // Siły oporu powietrza
+    double Dx = 0.5 * C * rho * S * vx * fabs(vx);
+    double Dy = 0.5 * C * rho * S * vy * fabs(vy);
+    
+    // Siły Magnusa
+    double F_Mx = rho * vy * omega * M_PI * r * r * r;
+    double F_My = rho * vx * omega * M_PI * r * r * r;
+    
+    // Równania ruchu
+    dY(0) = vx;  // dx/dt = vx
+    dY(1) = vy;  // dy/dt = vy
+    dY(2) = (-Dx - F_Mx) / m;  // m * dvx/dt = -Dx - F_Mx
+    dY(3) = (-m * g - Dy - F_My) / m;  // m * dvy/dt = -mg - Dy - F_My
+    
+    return dY;
+}
+
+// Funkcja celu dla problemu rzeczywistego - maksymalizacja x_end
+matrix ff4R(matrix params, matrix ud1, matrix ud2)
+{
+    matrix y(1, 1);
+    
+    double v0x = params(0);  // początkowa prędkość pozioma
+    double omega = params(1);  // rotacja piłki
+    
+    // Warunki początkowe: x0=0, y0=100, vx0=v0x, vy0=0
+    matrix Y0(4, 1);
+    Y0(0) = 0.0;    // x0
+    Y0(1) = 100.0;  // y0
+    Y0(2) = v0x;    // vx0
+    Y0(3) = 0.0;    // vy0
+    
+    matrix motion_params(2, 1);
+    motion_params(0) = v0x;
+    motion_params(1) = omega;
+    
+    // Symulacja lotu piłki
+    double t0 = 0.0;
+    double dt = 0.01;
+    double t_end = 7.0;
+    
+    matrix* Y = solve_ode(ball_motion_l4, t0, dt, t_end, Y0, NAN, motion_params);
+    
+    int n = get_len(Y[0]);
+    double x_end = 0.0;
+    double x_at_y50 = 0.0;
+    bool found_y50 = false;
+    
+    // Znajdź x_end (miejsce gdzie piłka uderza w ziemię) i x dla y=50
+    for (int i = 1; i < n; i++) {
+        double y_curr = Y[1](i, 1);  // aktualna pozycja y
+        double y_prev = Y[1](i-1, 1);  // poprzednia pozycja y
+        double x_curr = Y[1](i, 0);  // aktualna pozycja x
+        double x_prev = Y[1](i-1, 0);  // poprzednia pozycja x
+        
+        // Sprawdź przecięcie z y = 50
+        if (!found_y50 && y_prev >= 50.0 && y_curr <= 50.0) {
+            // Interpolacja liniowa
+            double t_interp = (50.0 - y_prev) / (y_curr - y_prev);
+            x_at_y50 = x_prev + t_interp * (x_curr - x_prev);
+            found_y50 = true;
+        }
+        
+        // Sprawdź uderzenie w ziemię (y <= 0)
+        if (y_curr <= 0.0 && y_prev > 0.0) {
+            // Interpolacja liniowa do znalezienia dokładnego miejsca uderzenia
+            double t_interp = (0.0 - y_prev) / (y_curr - y_prev);
+            x_end = x_prev + t_interp * (x_curr - x_prev);
+            break;
+        }
+    }
+    
+    // Funkcja celu: maksymalizujemy x_end, więc minimalizujemy -x_end
+    // Dodajemy karę za naruszenie ograniczenia x ∈ [3, 7] dla y = 50
+    double penalty = 0.0;
+    if (found_y50) {
+        if (x_at_y50 < 3.0) {
+            penalty = 1000.0 * (3.0 - x_at_y50) * (3.0 - x_at_y50);
+        } else if (x_at_y50 > 7.0) {
+            penalty = 1000.0 * (x_at_y50 - 7.0) * (x_at_y50 - 7.0);
+        }
+    } else {
+        penalty = 10000.0;  // Duża kara jeśli nie znaleziono y=50
+    }
+    
+    y(0) = -x_end + penalty;  // Minimalizujemy -x_end + penalty
+    
+    delete[] Y;
+    
+    return y;
+}
+
+// Funkcja do sprawdzenia poprawności implementacji
+void simulate_ball_flight(double v0x, double omega)
+{
+    cout << "=== Symulacja lotu piłki ===" << endl;
+    cout << "v0x = " << v0x << " m/s, omega = " << omega << " rad/s" << endl;
+    
+    matrix Y0(4, 1);
+    Y0(0) = 0.0;    // x0
+    Y0(1) = 100.0;  // y0
+    Y0(2) = v0x;    // vx0
+    Y0(3) = 0.0;    // vy0
+    
+    matrix motion_params(2, 1);
+    motion_params(0) = v0x;
+    motion_params(1) = omega;
+    
+    double t0 = 0.0;
+    double dt = 0.01;
+    double t_end = 7.0;
+    
+    matrix* Y = solve_ode(ball_motion_l4, t0, dt, t_end, Y0, NAN, motion_params);
+    
+    int n = get_len(Y[0]);
+    double x_end = 0.0;
+    double x_at_y50 = 0.0;
+    double t_at_y50 = 0.0;
+    bool found_y50 = false;
+    
+    // Znajdź wyniki
+    for (int i = 1; i < n; i++) {
+        double t_curr = Y[0](i);
+        double y_curr = Y[1](i, 1);
+        double y_prev = Y[1](i-1, 1);
+        double x_curr = Y[1](i, 0);
+        double x_prev = Y[1](i-1, 0);
+        double t_prev = Y[0](i-1);
+        
+        // Sprawdź przecięcie z y = 50
+        if (!found_y50 && y_prev >= 50.0 && y_curr <= 50.0) {
+            double t_interp = (50.0 - y_prev) / (y_curr - y_prev);
+            x_at_y50 = x_prev + t_interp * (x_curr - x_prev);
+            t_at_y50 = t_prev + t_interp * (t_curr - t_prev);
+            found_y50 = true;
+        }
+        
+        // Sprawdź uderzenie w ziemię
+        if (y_curr <= 0.0 && y_prev > 0.0) {
+            double t_interp = (0.0 - y_prev) / (y_curr - y_prev);
+            x_end = x_prev + t_interp * (x_curr - x_prev);
+            double t_end_actual = t_prev + t_interp * (t_curr - t_prev);
+            cout << "x_end ≈ x(" << t_end_actual << "s) ≈ " << x_end << " m" << endl;
+            break;
+        }
+    }
+    
+    if (found_y50) {
+        cout << "x ≈ " << x_at_y50 << " m dla y ≈ 50 m (t ≈ " << t_at_y50 << " s)" << endl;
+    }
+    
+    delete[] Y;
+}
