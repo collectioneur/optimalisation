@@ -672,65 +672,298 @@ solution sym_NM(matrix(*ff)(matrix, matrix, matrix), matrix x0, double s, double
 	}
 }
 
+#include"opt_alg.h"
+#include <vector>
+#include <cmath>
+#include <limits>
+
+double line_search_golden(matrix(*ff)(matrix, matrix, matrix), matrix x, matrix d, int Nmax, matrix ud1, matrix ud2)
+{
+    double a = 0.0;
+    double b = 1.0; // Zakładamy początkowy przedział [0, 1], można zwiększyć
+    double epsilon = 1e-7;
+    double alpha = (sqrt(5.0) - 1.0) / 2.0;
+
+    double c = b - alpha * (b - a);
+    double d_pt = a + alpha * (b - a); // d_pt bo d to kierunek
+
+    // Obliczamy f(x + c*d)
+    double f_c = ff(x + d * c, ud1, ud2)(0);
+    // Obliczamy f(x + d_pt*d)
+    double f_d = ff(x + d * d_pt, ud1, ud2)(0);
+
+    while ((b - a) > epsilon)
+    {
+        if (solution::f_calls > Nmax) return (a + b) / 2.0;
+
+        if (f_c < f_d)
+        {
+            b = d_pt;
+            d_pt = c;
+            f_d = f_c;
+            c = b - alpha * (b - a);
+            f_c = ff(x + d * c, ud1, ud2)(0);
+        }
+        else
+        {
+            a = c;
+            c = d_pt;
+            f_c = f_d;
+            d_pt = a + alpha * (b - a);
+            f_d = ff(x + d * d_pt, ud1, ud2)(0);
+        }
+    }
+    return (a + b) / 2.0;
+}
+
 solution SD(matrix(*ff)(matrix, matrix, matrix), matrix(*gf)(matrix, matrix, matrix), matrix x0, double h0, double epsilon, int Nmax, matrix ud1, matrix ud2)
 {
-	try
-	{
-		solution Xopt;
-		//Tu wpisz kod funkcji
+    try
+    {
+        solution Xopt;
+        Xopt.x = x0;
+        matrix d;
+        matrix grad;
+        
+        while (true)
+        {
+            grad = gf(Xopt.x, ud1, ud2); 
+            d = -grad;
 
-		return Xopt;
-	}
-	catch (string ex_info)
-	{
-		throw ("solution SD(...):\n" + ex_info);
-	}
+            // Kryterium stopu oparte na normie gradientu (typowe dla SD)
+            // LUB można użyć różnicy w krokach jak w pseudokodzie zadania
+            if (norm(grad) < epsilon) 
+            {
+                Xopt.flag = 1;
+                break;
+            }
+            
+            if (solution::f_calls > Nmax)
+            {
+                Xopt.flag = 0;
+                break;
+            }
+
+            double h;
+            if (h0 != 0) // Krok stały
+            {
+                h = h0;
+            }
+            else // Krok zmienny (Golden Section w kierunku d)
+            {
+                h = line_search_golden(ff, Xopt.x, d, Nmax, ud1, ud2);
+            }
+
+            matrix x_new = Xopt.x + d * h;
+            
+            // Alternatywne kryterium stopu z pseudokodu (różnica położeń)
+            if (norm(x_new - Xopt.x) < epsilon)
+            {
+                Xopt.x = x_new;
+                Xopt.flag = 1;
+                break;
+            }
+
+            Xopt.x = x_new;
+        }
+        
+        Xopt.fit_fun(ff, ud1, ud2);
+        return Xopt;
+    }
+    catch (string ex_info)
+    {
+        throw ("solution SD(...):\n" + ex_info);
+    }
 }
 
 solution CG(matrix(*ff)(matrix, matrix, matrix), matrix(*gf)(matrix, matrix, matrix), matrix x0, double h0, double epsilon, int Nmax, matrix ud1, matrix ud2)
 {
-	try
-	{
-		solution Xopt;
-		//Tu wpisz kod funkcji
+    try
+    {
+        solution Xopt;
+        Xopt.x = x0;
+        
+        matrix grad = gf(Xopt.x, ud1, ud2);
+        matrix d = -grad;
+        matrix grad_old = grad;
+        
+        double beta;
 
-		return Xopt;
-	}
-	catch (string ex_info)
-	{
-		throw ("solution CG(...):\n" + ex_info);
-	}
+        while (true)
+        {
+            if (norm(grad) < epsilon)
+            {
+                Xopt.flag = 1;
+                break;
+            }
+            
+            if (solution::f_calls > Nmax)
+            {
+                Xopt.flag = 0;
+                break;
+            }
+
+            double h;
+            if (h0 != 0) 
+            {
+                h = h0;
+            }
+            else 
+            {
+                h = line_search_golden(ff, Xopt.x, d, Nmax, ud1, ud2);
+            }
+
+            matrix x_new = Xopt.x + d * h;
+            
+            if (norm(x_new - Xopt.x) < epsilon)
+            {
+                Xopt.x = x_new;
+                Xopt.flag = 1;
+                break;
+            }
+
+            Xopt.x = x_new;
+            
+            // Obliczenie nowego gradientu i beta (Fletcher-Reeves)
+            grad = gf(Xopt.x, ud1, ud2);
+            
+            double num = pow(norm(grad), 2);
+            double den = pow(norm(grad_old), 2);
+            
+            if (den < 1e-10) beta = 0;
+            else beta = num / den;
+            
+            d = -grad + d * beta;
+            grad_old = grad;
+        }
+
+        Xopt.fit_fun(ff, ud1, ud2);
+        return Xopt;
+    }
+    catch (string ex_info)
+    {
+        throw ("solution CG(...):\n" + ex_info);
+    }
 }
 
 solution Newton(matrix(*ff)(matrix, matrix, matrix), matrix(*gf)(matrix, matrix, matrix),
-	matrix(*Hf)(matrix, matrix, matrix), matrix x0, double h0, double epsilon, int Nmax, matrix ud1, matrix ud2)
+    matrix(*Hf)(matrix, matrix, matrix), matrix x0, double h0, double epsilon, int Nmax, matrix ud1, matrix ud2)
 {
-	try
-	{
-		solution Xopt;
-		//Tu wpisz kod funkcji
+    try
+    {
+        solution Xopt;
+        Xopt.x = x0;
+        matrix d;
+        matrix grad;
+        matrix H;
 
-		return Xopt;
-	}
-	catch (string ex_info)
-	{
-		throw ("solution Newton(...):\n" + ex_info);
-	}
+        while (true)
+        {
+            grad = gf(Xopt.x, ud1, ud2);
+            H = Hf(Xopt.x, ud1, ud2);
+            
+            // Metoda Newtona: d = -H^-1 * grad
+            // Zakładamy, że macierz H jest odwracalna. W praktyce warto dodać zabezpieczenie.
+            d = -inv(H) * grad;
+
+            if (solution::f_calls > Nmax)
+            {
+                Xopt.flag = 0;
+                break;
+            }
+
+            double h;
+            if (h0 != 0) 
+            {
+                h = h0;
+            }
+            else 
+            {
+                h = line_search_golden(ff, Xopt.x, d, Nmax, ud1, ud2);
+            }
+
+            matrix x_new = Xopt.x + d * h;
+
+            if (norm(x_new - Xopt.x) < epsilon)
+            {
+                Xopt.x = x_new;
+                Xopt.flag = 1;
+                break;
+            }
+
+            Xopt.x = x_new;
+        }
+
+        Xopt.fit_fun(ff, ud1, ud2);
+        return Xopt;
+    }
+    catch (string ex_info)
+    {
+        throw ("solution Newton(...):\n" + ex_info);
+    }
 }
 
 solution golden(matrix(*ff)(matrix, matrix, matrix), double a, double b, double epsilon, int Nmax, matrix ud1, matrix ud2)
 {
-	try
-	{
-		solution Xopt;
-		//Tu wpisz kod funkcji
+    try
+    {
+        solution Xopt;
+        // Metoda złotego podziału dla funkcji 1D (przekazywanej jako ff)
+        // Uwaga: argumentami ff są macierze, więc rzutujemy skalary na macierz 1x1.
+        
+        double alpha = (sqrt(5.0) - 1.0) / 2.0;
+        
+        double c = b - alpha * (b - a);
+        double d = a + alpha * (b - a);
+        
+        matrix x_c(1, 1, c);
+        matrix x_d(1, 1, d);
+        
+        double f_c = ff(x_c, ud1, ud2)(0);
+        double f_d = ff(x_d, ud1, ud2)(0);
+        
+        while ((b - a) > epsilon)
+        {
+            if (solution::f_calls > Nmax)
+            {
+                Xopt.flag = 0;
+                Xopt.x = matrix(1, 1, (a + b) / 2.0);
+                Xopt.y = matrix(1, 1, f_c); // przybliżenie
+                return Xopt;
+            }
 
-		return Xopt;
-	}
-	catch (string ex_info)
-	{
-		throw ("solution golden(...):\n" + ex_info);
-	}
+            if (f_c < f_d)
+            {
+                b = d;
+                d = c;
+                f_d = f_c;
+                c = b - alpha * (b - a);
+                
+                x_c(0) = c;
+                f_c = ff(x_c, ud1, ud2)(0);
+            }
+            else
+            {
+                a = c;
+                c = d;
+                f_c = f_d;
+                d = a + alpha * (b - a);
+                
+                x_d(0) = d;
+                f_d = ff(x_d, ud1, ud2)(0);
+            }
+        }
+        
+        Xopt.x = matrix(1, 1, (a + b) / 2.0);
+        Xopt.fit_fun(ff, ud1, ud2);
+        Xopt.flag = 1;
+
+        return Xopt;
+    }
+    catch (string ex_info)
+    {
+        throw ("solution golden(...):\n" + ex_info);
+    }
 }
 
 solution Powell(matrix(*ff)(matrix, matrix, matrix), matrix x0, double epsilon, int Nmax, matrix ud1, matrix ud2)

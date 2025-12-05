@@ -400,3 +400,130 @@ void simulate_ball_flight(double v0x, double omega)
     
     delete[] Y;
 }
+// Funkcja testowa z instrukcji: f(x, y) = 1/6*x^6 - 1.05*x^4 + 2*x^2 + x*y + y^2
+matrix ff5T(matrix x, matrix ud1, matrix ud2)
+{
+    matrix y(1, 1);
+    double x1 = x(0);
+    double x2 = x(1);
+    y(0) = (1.0/6.0)*pow(x1, 6) - 1.05*pow(x1, 4) + 2.0*pow(x1, 2) + x1*x2 + pow(x2, 2);
+    return y;
+}
+
+// Gradient funkcji testowej
+matrix gf5T(matrix x, matrix ud1, matrix ud2)
+{
+    matrix g(2, 1);
+    double x1 = x(0);
+    double x2 = x(1);
+    g(0) = pow(x1, 5) - 4.2*pow(x1, 3) + 4.0*x1 + x2;
+    g(1) = x1 + 2.0*x2;
+    return g;
+}
+
+// Hesjan funkcji testowej
+matrix Hf5T(matrix x, matrix ud1, matrix ud2)
+{
+    matrix H(2, 2);
+    double x1 = x(0);
+    // H11 = d^2f/dx1^2
+    H(0, 0) = 5.0*pow(x1, 4) - 12.6*pow(x1, 2) + 4.0;
+    // H12 = H21 = 1
+    H(0, 1) = 1.0;
+    H(1, 0) = 1.0;
+    // H22 = 2
+    H(1, 1) = 2.0;
+    return H;
+}
+
+inline int get_rows(const matrix& A) {
+    // get_size alokuje pamiec (new), wiec musimy ja zwolnic
+    int* s = get_size(A);
+    int rows = s[0];
+    delete[] s; 
+    return rows;
+}
+
+inline int get_cols(const matrix& A) {
+    // get_size alokuje pamiec (new), wiec musimy ja zwolnic
+    int* s = get_size(A);
+    int cols = s[1];
+    delete[] s;
+    return cols;
+}
+
+matrix hypothesis(matrix theta, matrix X) {
+    // theta: nx1, X: nxm
+    int m = get_cols(X);
+    matrix h(1, m);
+    matrix z = trans(theta) * X; // wektor z (1xm)
+    
+    for (int i = 0; i < m; ++i) {
+        h(0, i) = 1.0 / (1.0 + exp(-z(0, i)));
+    }
+    return h;
+}
+
+// Funkcja kosztu: J(theta)
+matrix ff5R(matrix theta, matrix ud1, matrix ud2)
+{
+    matrix J(1, 1);
+    matrix X = ud1; // Dane wejściowe
+    matrix Y = ud2; // Oczekiwane wyniki (0 lub 1)
+    int m = get_cols(X);
+    
+    matrix h = hypothesis(theta, X);
+    
+    double sum = 0.0;
+    for (int i = 0; i < m; ++i) {
+        double val = h(0, i);
+        // Zabezpieczenie numeryczne logarytmu
+        if (val < 1e-15) val = 1e-15;
+        if (val > 1.0 - 1e-15) val = 1.0 - 1e-15;
+        
+        sum += Y(0, i) * log(val) + (1.0 - Y(0, i)) * log(1.0 - val);
+    }
+    
+    J(0) = -sum / m;
+    return J;
+}
+
+// Gradient funkcji kosztu
+matrix gf5R(matrix theta, matrix ud1, matrix ud2)
+{
+    matrix X = ud1;
+    matrix Y = ud2;
+    int m = get_cols(X);
+    
+    matrix h = hypothesis(theta, X);
+    
+    // Grad = 1/m * X * (h - Y)^T
+    matrix err = h - Y; // (1xm)
+    matrix grad = (X * trans(err)) * (1.0 / m); // (nxm) * (mx1) = (nx1)
+    
+    return grad;
+}
+
+// Funkcja do wczytywania macierzy z pliku
+matrix read_matrix_from_file(string filename, int rows, int cols)
+{
+    ifstream file(filename);
+    if (!file.is_open()) throw string("Nie mozna otworzyc pliku: " + filename);
+    
+    matrix M(rows, cols);
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            double val;
+            file >> val;
+            M(i, j) = val;
+            // Obsługa separatorów (jeśli dane są po przecinku, trzeba dostosować)
+            // Zakładamy format oddzielony spacjami lub nowymi liniami,
+            // lub użycie operatora >> który pomija białe znaki.
+            
+            // Opcjonalnie ignoruj przecinki/średniki jeśli są w pliku
+            if (file.peek() == ',' || file.peek() == ';') file.ignore();
+        }
+    }
+    file.close();
+    return M;
+}
