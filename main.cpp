@@ -347,7 +347,7 @@ void lab4()
     // double epsilon = 1e-3;
     // int Nmax = 10000;
     // double values_a[] = {4.0, 4.4934, 5.0};
-    // int num_tests = 100; // Полные 100 тестов для каждого параметра a
+    // int num_tests = 100; 
     
     // srand(time(NULL));
     
@@ -403,8 +403,8 @@ void lab4()
             
     //         solution::clear_calls();
     //         matrix pen_params_ext(2, 1);
-    //         pen_params_ext(0) = 0.0;  // внешняя функция кары
-    //         pen_params_ext(1) = a;    // параметр a
+    //         pen_params_ext(0) = 0.0;  
+    //         pen_params_ext(1) = a;   
     //         solution result_ext = pen(ff4T, x0, 1.0, 10.0, epsilon, Nmax, pen_params_ext, NAN);
             
     //         double r_ext = sqrt(result_ext.x(0)*result_ext.x(0) + result_ext.x(1)*result_ext.x(1));
