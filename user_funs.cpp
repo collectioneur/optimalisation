@@ -1,5 +1,6 @@
 #include"user_funs.h"
 #include<cmath>
+#include "solution.h"
 
 #define _USE_MATH_DEFINES
 #define M_PI 3.14159265358979323846
@@ -403,6 +404,7 @@ void simulate_ball_flight(double v0x, double omega)
 // Funkcja testowa z instrukcji: f(x, y) = 1/6*x^6 - 1.05*x^4 + 2*x^2 + x*y + y^2
 matrix ff5T(matrix x, matrix ud1, matrix ud2)
 {
+    solution::f_calls++;
     matrix y(1, 1);
     double x1 = x(0);
     double x2 = x(1);
@@ -413,6 +415,7 @@ matrix ff5T(matrix x, matrix ud1, matrix ud2)
 // Gradient funkcji testowej
 matrix gf5T(matrix x, matrix ud1, matrix ud2)
 {
+    solution::g_calls++;
     matrix g(2, 1);
     double x1 = x(0);
     double x2 = x(1);
@@ -424,6 +427,7 @@ matrix gf5T(matrix x, matrix ud1, matrix ud2)
 // Hesjan funkcji testowej
 matrix Hf5T(matrix x, matrix ud1, matrix ud2)
 {
+    solution::H_calls++;
     matrix H(2, 2);
     double x1 = x(0);
     // H11 = d^2f/dx1^2
