@@ -648,147 +648,146 @@ void lab4()
 void lab5()
 {
     cout << "=== LAB 5 - Metody Gradientowe ===" << endl;
-    
+
     // --- CZĘŚĆ A: Funkcja Testowa ---
     cout << "\n--- Czesc A: Funkcja testowa ---" << endl;
-    
+
     // Konfiguracja
-    double steps[] = {0.05, 0.25, 0.0}; // 0.0 oznacza krok zmienny
-    string step_names[] = {"0.05", "0.25", "Variable"};
+    double steps[] = { 0.05, 0.25, 0.0 }; // 0.0 oznacza krok zmienny
+    string step_names[] = { "0.05", "0.25", "Variable" };
     int Nmax = 1000;
     double epsilon = 1e-4;
-    
+
     ofstream res_test("lab5_test_results.csv");
     res_test << "Method,Step,SuccessRate,AvgIter,AvgX1,AvgX2,AvgF\n";
 
     // Wykonaj 100 losowań dla każdego wariantu
     for (int s = 0; s < 3; ++s) {
         double h = steps[s];
-        
-        // Statystyki dla SD, CG, Newton
-        double stats[3][4] = {0}; // [Method][Success, IterSum, x1Sum, x2Sum]
-        int attempts = 100;
 
-        srand(1234); // Stałe ziarno dla powtarzalności porównań między krokami
+        // Statystyki dla SD, CG, Newton
+        double stats[3][4] = { 0 }; // [Method][Success, IterSum, x1Sum, x2Sum]
+        int attempts = 100; // Zmniejsz do 10 jesli test 'Variable' trwa za dlugo
+
+        srand(1234); 
+
+        cout << "Rozpoczynanie testow dla kroku: " << step_names[s] << endl;
 
         for (int i = 0; i < attempts; ++i) {
-            // Losowy punkt startowy [-2, 2]
+            // Logowanie postępu co 10 prób, żeby nie zalewać konsoli
+            if (i % 10 == 0) cout << "  Probka " << i << " / " << attempts << "..." << endl;
+
             matrix x0(2, 1);
             x0(0) = -2.0 + 4.0 * ((double)rand() / RAND_MAX);
             x0(1) = -2.0 + 4.0 * ((double)rand() / RAND_MAX);
-            
-            solution sol;
 
             // 1. Steepest Descent (SD)
             solution::clear_calls();
             try {
-                sol = SD(ff5T, gf5T, x0, h, epsilon, Nmax, NAN, NAN);
-                // Sprawdź czy znalazł minimum globalne (około -1.0316)
-                // Punkt globalny to ok. (1.74, -0.87) lub (-1.74, 0.87) f ~ 0.29
-                // Instrukcja mówi o minimum globalnym. Funkcja camel ma ich kilka.
-                // Przyjmijmy sukces jeśli flaga=1
+                // TWORZYMY NOWĄ ZMIENNĄ sol DLA KAŻDEJ METODY (Zapobiega błędom)
+                solution sol = SD(ff5T, gf5T, x0, h, epsilon, Nmax, NAN, NAN);
                 if (sol.flag == 1) {
                     stats[0][0]++;
-                    stats[0][1] += solution::f_calls; // Lub liczba iteracji wewnątrz algorytmu
+                    stats[0][1] += solution::f_calls + solution::g_calls + solution::H_calls;
                     stats[0][2] += sol.x(0);
                     stats[0][3] += sol.x(1);
                 }
-            } catch(...) {}
+            }
+            catch (...) {}
 
             // 2. Conjugate Gradient (CG)
             solution::clear_calls();
             try {
-                sol = CG(ff5T, gf5T, x0, h, epsilon, Nmax, NAN, NAN);
+                solution sol = CG(ff5T, gf5T, x0, h, epsilon, Nmax, NAN, NAN);
                 if (sol.flag == 1) {
                     stats[1][0]++;
-                    stats[1][1] += solution::f_calls;
+                    stats[1][1] += solution::f_calls + solution::g_calls + solution::H_calls;
                     stats[1][2] += sol.x(0);
                     stats[1][3] += sol.x(1);
                 }
-            } catch(...) {}
+            }
+            catch (...) {}
 
             // 3. Newton
             solution::clear_calls();
             try {
-                sol = Newton(ff5T, gf5T, Hf5T, x0, h, epsilon, Nmax, NAN, NAN);
+                solution sol = Newton(ff5T, gf5T, Hf5T, x0, h, epsilon, Nmax, NAN, NAN);
                 if (sol.flag == 1) {
                     stats[2][0]++;
-                    stats[2][1] += solution::f_calls;
+                    stats[2][1] += solution::f_calls + solution::g_calls + solution::H_calls;
                     stats[2][2] += sol.x(0);
                     stats[2][3] += sol.x(1);
                 }
-            } catch(...) {}
+            }
+            catch (...) {}
         }
-        
+
         // Zapisz wyniki uśrednione
-        string methods[] = {"SD", "CG", "Newton"};
-        for(int m=0; m<3; ++m) {
+        string methods[] = { "SD", "CG", "Newton" };
+        for (int m = 0; m < 3; ++m) {
             double success = stats[m][0];
-            if(success > 0) {
+            if (success > 0) {
                 res_test << methods[m] << "," << step_names[s] << ","
-                             << (success/attempts)*100 << "%,"
-                             << stats[m][1]/success << ","
-                             << stats[m][2]/success << ","
-                             << stats[m][3]/success << ","
-                             << ff5T(matrix(2, new double[2]{stats[m][2]/success, stats[m][3]/success}), NAN, NAN)(0)
-                             << "\n";
-            } else {
+                    << (success / attempts) * 100 << "%,"
+                    << stats[m][1] / success << ","
+                    << stats[m][2] / success << ","
+                    << stats[m][3] / success << ","
+                    << ff5T(matrix(2, new double[2] {stats[m][2] / success, stats[m][3] / success}), NAN, NAN)(0)
+                    << "\n";
+            }
+            else {
                 res_test << methods[m] << "," << step_names[s] << ",0%,0,0,0,0\n";
             }
         }
+        cout << "Zakonczono krok: " << step_names[s] << "\n----------------" << endl;
     }
     res_test.close();
-    cout << "Wyniki testow zapisano do lab5_test_results.csv" << endl;
-
+    cout << "Wyniki testow czesci A zapisano do lab5_test_results.csv" << endl;
 
     // --- CZĘŚĆ B: Problem Rzeczywisty (Regresja) ---
     cout << "\n--- Czesc B: Problem rzeczywisty ---" << endl;
-    
-    // Wczytanie danych
-    // Uwaga: Zakładam strukturę plików zgodną z instrukcją: XData.txt (3x100), YData.txt (1x100)
-    // Jeśli pliki nie istnieją, należy je utworzyć lub podstawić dane.
-    // XData w instrukcji ma [1, x1, x2]^T
-    
+
     try {
+        // Upewnij się, że masz te pliki w folderze z projektem!
         matrix X = read_matrix_from_file("XData.txt", 3, 100);
         matrix Y = read_matrix_from_file("YData.txt", 1, 100);
-        
+
         cout << "Dane wczytane pomyslnie." << endl;
-        
-        matrix theta0(3, 1, 0.0); // Punkt startowy [0,0,0]
-        double steps_real[] = {0.01, 0.001, 0.0001};
-        
+
+        matrix theta0(3, 1, 0.0);
+        double steps_real[] = { 0.01, 0.001, 0.0001 };
+
         ofstream res_real("lab5_real_results.csv");
         res_real << "Step,Theta0,Theta1,Theta2,Cost,Calls,Accuracy\n";
-        
+
         for (int i = 0; i < 3; ++i) {
             double h = steps_real[i];
             solution::clear_calls();
-            
-            // Używamy metody CG zgodnie z instrukcją
-            solution sol = CG(ff5R, gf5R, theta0, h, 1e-4, 10000, X, Y);
-            
-            // Obliczamy dokładność klasyfikacji
+
+            // Zwiekszamy limit iteracji dla problemu rzeczywistego
+            solution sol = CG(ff5R, gf5R, theta0, h, 1e-4, 20000, X, Y);
+
             matrix h_theta = hypothesis(sol.x, X);
             int correct = 0;
             int m = 100;
-            for(int j=0; j<m; ++j) {
+            for (int j = 0; j < m; ++j) {
                 int pred = (h_theta(0, j) >= 0.5) ? 1 : 0;
-                if(pred == (int)Y(0, j)) correct++;
+                if (pred == (int)Y(0, j)) correct++;
             }
             double acc = (double)correct / m * 100.0;
-            
+
             cout << "Krok: " << h << ", Koszt: " << sol.y(0) << ", Acc: " << acc << "%" << endl;
-            
-            res_real << h << "," 
-                     << sol.x(0) << "," << sol.x(1) << "," << sol.x(2) << ","
-                     << sol.y(0) << "," << solution::f_calls << "," << acc << "\n";
+
+            res_real << h << ","
+                << sol.x(0) << "," << sol.x(1) << "," << sol.x(2) << ","
+                << sol.y(0) << "," << solution::f_calls << "," << acc << "\n";
         }
         res_real.close();
-        
-    } catch (string ex) {
+        cout << "Wyniki testow czesci B zapisano do lab5_real_results.csv" << endl;
+
+    }
+    catch (string ex) {
         cout << "Problem z czescia B (brak plikow?): " << ex << endl;
-        cout << "Upewnij sie, ze pliki XData.txt i YData.txt sa w katalogu roboczym." << endl;
     }
 }
 
