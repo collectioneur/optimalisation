@@ -30,6 +30,23 @@ int main()
 {
     try
     {
+        double l_test = 0.5;   // 500 mm = 0.5 m
+        double d_test = 0.025; // 25 mm = 0.025 m
+        double P = 2000.0;
+        double E = 120e9;
+        double rho = 8920.0;
+        double m = (M_PI * pow(d_test, 2) * l_test * rho) / 4.0;
+        double u = (64.0 * P * pow(l_test, 3)) / (3.0 * E * M_PI * pow(d_test, 4));
+        double sigma = (32.0 * P * l_test) / (M_PI * pow(d_test, 3));
+
+        cout << "=== WERYFIKACJA WZOROW (DANE Z KONSPEKTU) ===" << endl;
+        cout << "Zadane l = " << l_test * 1000 << " mm" << endl;
+        cout << "Zadane d = " << d_test * 1000 << " mm" << endl;
+        cout << "---------------------------------------------" << endl;
+        cout << "Masa (oczekiwana: ~2.19 kg):       " << m << " kg" << endl;
+        cout << "Ugiecie (oczekiwana: ~36.22 mm):   " << u * 1000.0 << " mm" << endl;
+        cout << "Naprezenie (oczekiwana: ~651.9 MPa): " << sigma / 1e6 << " MPa" << endl;
+        cout << "---------------------------------------------" << endl;
         lab5();
     }
     catch (string EX_INFO)
@@ -587,7 +604,7 @@ void lab4()
 }
 
 // TO NIE LAB 5!!!!
-// void lab5() 
+// void lab5()
 // {
 //     cout << "=== LAB 5 - Metody Gradientowe ===" << endl;
 
@@ -754,104 +771,110 @@ void lab4()
 //         cout << "Problem z czescia B (brak plikow?): " << ex << endl;
 //     }
 // }
+
 void lab5()
 {
+    const double P_force = 2000.0;     // 2 kN = 2000 N
+    const double E_modulus = 120e9;    // 120 GPa = 120 * 10^9 Pa
+    const double rho_density = 8920.0; // kg/m^3
+
+    // Ograniczenia
+    const double u_max = 2.5e-3;    // 2.5 mm = 0.0025 m
+    const double sigma_max = 300e6; // 300 MPa = 300 * 10^6 Pa
+
+    // Granice zmiennych (w metrach)
+    const double l_min = 0.2;  // 200 mm
+    const double l_max = 1.0;  // 1000 mm
+    const double d_min = 0.01; // 10 mm
+    const double d_max = 0.05; // 50 mm
     try
     {
-        // =============================================================
-        // CZĘŚĆ 1: Weryfikacja dla punktu testowego
-        // =============================================================
-        cout << "=== WERYFIKACJA PUNKTU STARTOWEGO ===" << endl;
-        double l_test = 0.5;   // 500 mm
-        double d_test = 0.025; // 25 mm
+        // Otwarcie pliku CSV
+        ofstream plik("wyniki_lab5.csv");
+        if (!plik.is_open())
+            throw string("Nie udalo sie otworzyc pliku do zapisu!");
 
-        double m_ver = (M_PI * pow(d_test, 2) * l_test * rho_density) / 4.0;
-        double u_ver = (64.0 * P_force * pow(l_test, 3)) / (3.0 * E_modulus * M_PI * pow(d_test, 4));
-        double s_ver = (32.0 * P_force * l_test) / (M_PI * pow(d_test, 3));
+        // Nagłówek CSV (średnik jako separator dla polskiego Excela)
+        plik << "w;l_opt[mm];d_opt[mm];Masa[kg];Ugiecie[mm];Naprezenie[MPa];FunkcjaCelu\n";
 
-        cout << fixed << setprecision(5);
-        cout << "Dla l = 500 mm, d = 25 mm:" << endl;
-        cout << "Masa (oczekiwana ~2.19 kg):       " << m_ver << " kg" << endl;
-        cout << "Ugiecie (oczekiwana ~36.22 mm):   " << u_ver * 1000.0 << " mm" << endl;
-        cout << "Naprezenie (oczekiwana ~651.9 MPa): " << s_ver / 1e6 << " MPa" << endl;
-        
-        cout << endl << "Sprawdzenie ograniczen:" << endl;
-        cout << "u_max = 2.5 mm -> Czy " << u_ver*1000 << " <= 2.5? " << (u_ver <= u_max ? "TAK" : "NIE") << endl;
-        cout << "s_max = 300 MPa -> Czy " << s_ver/1e6 << " <= 300? " << (s_ver <= sigma_max ? "TAK" : "NIE") << endl;
-        cout << "Punkt jest niedopuszczalny (przekracza ograniczenia)." << endl;
-        cout << "=====================================" << endl << endl;
+        // Generator liczb losowych
+        random_device rd;
+        mt19937 gen(rd());
+        uniform_real_distribution<double> dist_l(l_min, l_max);
+        uniform_real_distribution<double> dist_d(d_min, d_max);
 
+        cout << "Rozpoczynam obliczenia dla 101 punktow..." << endl;
 
-        // =============================================================
-        // CZĘŚĆ 2: Optymalizacja
-        // =============================================================
-        
-        // Punkt startowy (środek przedziału poszukiwań)
-        matrix x0(2, 1);
-        x0(0, 0) = 0.6;  // l = 600 mm
-        x0(1, 0) = 0.03; // d = 30 mm
+        matrix ud1(2, 1);
+        matrix ud2; // puste
 
-        // Parametry sterujące
-        double weight = 0.5; // w = 0.5 (równowaga między masą a ugięciem)
-        double c = 10.0;      // Początkowy współczynnik kary
-        double dc = 2.0;     // Mnożnik zwiększania kary
-        int optimization_steps = 10; // Liczba iteracji metody kary zewnętrznej
-        
-        matrix ud1(2, 1), ud2; // ud2 puste
-        ud1(0, 0) = weight;
-
-        solution result;
-        matrix x_curr = x0;
-
-        cout << "Rozpoczynam optymalizacje metoda Powella z zewnetrzna funkcja kary..." << endl;
-        
-        // Pętla zewnętrzna funkcji kary
-        for(int i = 0; i < optimization_steps; ++i)
+        // Pętla po wagach w = 0, 0.01, ..., 1.0
+        for (int i = 0; i <= 100; ++i)
         {
-            ud1(1, 0) = c; // Aktualizacja współczynnika kary
+            double w = i / 100.0;
+            ud1(0, 0) = w;
 
-            // Wywołanie metody Powella (korzystamy z funkcji zaimplementowanej wcześniej)
-            // ff4R - funkcja celu, x_curr - punkt startowy
-            result = Powell(ff4R, x_curr, 1e-5, 2000, ud1, ud2);
-            
-            x_curr = result.x; // Nowy punkt startowy to wynik poprzedniej iteracji
+            // 1. Losowanie punktu startowego
+            matrix x_curr(2, 1);
+            x_curr(0, 0) = dist_l(gen);
+            x_curr(1, 0) = dist_d(gen);
 
-            // Wypisanie postępu
-            // cout << "Iteracja " << i+1 << " (c=" << c << "): l=" << x_curr(0,0) << ", d=" << x_curr(1,0) << endl;
+            // 2. Metoda kary zewnętrznej
+            double c = 100.0;       // Początkowe c (można dobrać eksperymentalnie)
+            double dc = 1.5;        // Mnożnik c
+            int penalty_steps = 15; // Liczba iteracji kary
 
-            c *= dc; // Zwiększenie kary
-            
-            // Proste sprawdzenie stabilizacji (opcjonalnie można dodać warunek stopu po zmianie x)
+            solution res;
+
+            // Pętla funkcji kary
+            for (int k = 0; k < penalty_steps; ++k)
+            {
+                ud1(1, 0) = c; // Ustawienie aktualnego c
+
+                // Wywołanie Powella (zmniejszone epsilon dla szybkości, ale wystarczające)
+                // Nmax ustawione na np. 2000 per iteracja kary
+                res = Powell(ff5R, x_curr, 1e-6, 2000, ud1, ud2);
+
+                x_curr = res.x; // Aktualizacja punktu startowego
+                c *= dc;        // Zwiększenie kary
+            }
+
+            // 3. Obliczenie wyników fizycznych dla znalezionego optimum
+            double l_opt = x_curr(0, 0);
+            double d_opt = x_curr(1, 0);
+
+            double mass = (M_PI * pow(d_opt, 2) * l_opt * rho_density) / 4.0;
+            double defl = (64.0 * P_force * pow(l_opt, 3)) / (3.0 * E_modulus * M_PI * pow(d_opt, 4));
+            double stress = (32.0 * P_force * l_opt) / (M_PI * pow(d_opt, 3));
+            double f_val = w * mass + (1.0 - w) * defl;
+
+            // 4. Zapis do CSV (jednostki przyjazne dla inżyniera: mm, MPa)
+            // Formatowanie z kropką jako separatorem dziesiętnym (Excel sobie poradzi lub trzeba zmienić na przecinek)
+            // Tutaj używam tricku: wypisujemy normalnie, a Excel przy imporcie "Tekst jako kolumny" obsłuży kropkę.
+
+            // Wypisywanie na ekran co 10 iteracji
+            if (i % 10 == 0)
+            {
+                cout << "Postep: w = " << w << " -> Masa: " << mass << " kg, Ugiecie: " << defl * 1000 << " mm" << endl;
+            }
+
+            plik << fixed << setprecision(6)
+                 << w << ";"
+                 << l_opt * 1000.0 << ";"
+                 << d_opt * 1000.0 << ";"
+                 << mass << ";"
+                 << defl * 1000.0 << ";" // zamiana na mm
+                 << stress / 1e6 << ";"  // zamiana na MPa
+                 << f_val << "\n";
         }
 
-        // =============================================================
-        // CZĘŚĆ 3: Wyniki końcowe
-        // =============================================================
-        double l_opt = result.x(0, 0);
-        double d_opt = result.x(1, 0);
-
-        // Obliczenie finalnych parametrów fizycznych dla optymalnego punktu
-        double m_opt = (M_PI * pow(d_opt, 2) * l_opt * rho_density) / 4.0;
-        double u_opt = (64.0 * P_force * pow(l_opt, 3)) / (3.0 * E_modulus * M_PI * pow(d_opt, 4));
-        double s_opt = (32.0 * P_force * l_opt) / (M_PI * pow(d_opt, 3));
-
-        cout << endl << "=== WYNIK OPTYMALIZACJI ===" << endl;
-        cout << "Waga w = " << weight << endl;
-        cout << "Zmienne decyzyjne:" << endl;
-        cout << "l = " << l_opt * 1000.0 << " mm" << endl;
-        cout << "d = " << d_opt * 1000.0 << " mm" << endl;
-        cout << "Parametry:" << endl;
-        cout << "Masa = " << m_opt << " kg" << endl;
-        cout << "Ugiecie = " << u_opt * 1000.0 << " mm (Limit: 2.5 mm)" << endl;
-        cout << "Naprezenie = " << s_opt / 1e6 << " MPa (Limit: 300 MPa)" << endl;
-
+        plik.close();
+        cout << "Zakonczono. Wyniki zapisano w 'wyniki_lab5.csv'." << endl;
     }
     catch (string ex)
     {
-        cerr << "Blad: " << ex << endl;
+        cerr << "Blad krytyczny: " << ex << endl;
     }
-
-    return 0;
 }
 void lab6()
 {
