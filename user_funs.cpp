@@ -490,32 +490,85 @@ matrix hypothesis(matrix theta, matrix X)
     return h;
 }
 
-// Funkcja kosztu: J(theta)
-matrix ff5R(matrix theta, matrix ud1, matrix ud2)
+const double P_force = 2000.0;    // 2 kN = 2000 N
+const double E_modulus = 120e9;   // 120 GPa = 120 * 10^9 Pa
+const double rho_density = 8920.0; // kg/m^3
+
+// Ograniczenia
+const double u_max = 2.5e-3;      // 2.5 mm = 0.0025 m
+const double sigma_max = 300e6;   // 300 MPa = 300 * 10^6 Pa
+
+// Granice zmiennych (w metrach)
+const double l_min = 0.2;         // 200 mm
+const double l_max = 1.0;         // 1000 mm
+const double d_min = 0.01;        // 10 mm
+const double d_max = 0.05;        // 50 mm
+
+// Funkcja celu dla problemu rzeczywistego
+// x(0) - długość l [m]
+// x(1) - średnica d [m]
+// ud1(0) - waga w (dla f1 - masy)
+// ud1(1) - współczynnik kary c
+matrix ff5R(matrix x, matrix ud1, matrix ud2)
 {
-    matrix J(1, 1);
-    matrix X = ud1; // Dane wejściowe
-    matrix Y = ud2; // Oczekiwane wyniki (0 lub 1)
-    int m = get_cols(X);
+    matrix y(1, 1, 0.0);
+    
+    double l = x(0, 0);
+    double d = x(1, 0);
 
-    matrix h = hypothesis(theta, X);
+    double w = ud1(0, 0);
+    double c = ud1(1, 0);
 
-    double sum = 0.0;
-    for (int i = 0; i < m; ++i)
-    {
-        double val = h(0, i);
-        // Zabezpieczenie numeryczne logarytmu
-        if (val < 1e-15)
-            val = 1e-15;
-        if (val > 1.0 - 1e-15)
-            val = 1.0 - 1e-15;
+    double mass = (M_PI * pow(d, 2) * l * rho_density) / 4.0;
 
-        sum += Y(0, i) * log(val) + (1.0 - Y(0, i)) * log(1.0 - val);
-    }
+    double deflection = (64.0 * P_force * pow(l, 3)) / (3.0 * E_modulus * M_PI * pow(d, 4));
+    double stress = (32.0 * P_force * l) / (M_PI * pow(d, 3));
 
-    J(0) = -sum / m;
-    return J;
+    double obj_value = w * mass + (1.0 - w) * deflection;
+    double penalty = 0.0;
+
+    if (l < l_min) penalty += pow(l_min - l, 2);
+    if (l > l_max) penalty += pow(l - l_max, 2);
+    if (d < d_min) penalty += pow(d_min - d, 2);
+    if (d > d_max) penalty += pow(d - d_max, 2);
+
+    if (deflection > u_max) 
+        penalty += pow((deflection / u_max) - 1.0, 2);
+
+    if (stress > sigma_max) 
+        penalty += pow((stress / sigma_max) - 1.0, 2);
+
+    y(0, 0) = obj_value + c * penalty;
+
+    return y;
 }
+
+// // Funkcja kosztu: J(theta)
+// matrix ff5R(matrix theta, matrix ud1, matrix ud2)
+// {
+//     matrix J(1, 1);
+//     matrix X = ud1; // Dane wejściowe
+//     matrix Y = ud2; // Oczekiwane wyniki (0 lub 1)
+//     int m = get_cols(X);
+
+//     matrix h = hypothesis(theta, X);
+
+//     double sum = 0.0;
+//     for (int i = 0; i < m; ++i)
+//     {
+//         double val = h(0, i);
+//         // Zabezpieczenie numeryczne logarytmu
+//         if (val < 1e-15)
+//             val = 1e-15;
+//         if (val > 1.0 - 1e-15)
+//             val = 1.0 - 1e-15;
+
+//         sum += Y(0, i) * log(val) + (1.0 - Y(0, i)) * log(1.0 - val);
+//     }
+
+//     J(0) = -sum / m;
+//     return J;
+// }
 
 // Gradient funkcji kosztu
 matrix gf5R(matrix theta, matrix ud1, matrix ud2)

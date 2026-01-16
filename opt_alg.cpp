@@ -1031,11 +1031,149 @@ solution Powell(matrix (*ff)(matrix, matrix, matrix), matrix x0, double epsilon,
     try
     {
         solution Xopt;
-        // Tu wpisz kod funkcji
+        int N = get_len(x0);
+        int fcalls = 0;
 
-        return Xopt;
+        auto f = [&](matrix x) -> double {
+            if (fcalls >= Nmax) throw std::string("Przekroczono Nmax");
+            matrix res = ff(x, ud1, ud2);
+            fcalls++;
+            return res(0, 0);
+        };
+
+        auto get_h = [&](matrix p, matrix d) -> double {
+            double h = 0.0;
+            double step = 0.1; 
+
+            double a = 0, b = 0;
+            double fa = f(p), fb = fa;
+
+            matrix h_mat(1, 1, step);
+            double f_next = f(p + d * h_mat);
+
+            if (f_next < fa) {
+                b = step;
+                fb = f_next;
+                while(true) {
+                    step *= 2.0;
+                    h_mat(0,0) = b + step;
+                    double fc = f(p + d * h_mat);
+                    if (fc >= fb) {
+                        a = b - step/2.0;
+                        b = b + step;
+                        break;
+                    }
+                    a = b;
+                    fb = fc;
+                    b = b + step;
+                    if(fcalls >= Nmax) return b;
+                }
+            } else {
+                step = -step;
+                h_mat(0,0) = step;
+                f_next = f(p + d * h_mat);
+                if (f_next >= fa) {
+                    a = step; b = -step;
+                } else {
+                    b = step;
+                    fb = f_next;
+                    while(true) {
+                        step *= 2.0;
+                        h_mat(0,0) = b + step;
+                        double fc = f(p + d * h_mat);
+                        if (fc >= fb) {
+                            a = b - step/2.0;
+                            b = b + step;
+                            break;
+                        }
+                        a = b;
+                        fb = fc;
+                        b = b + step;
+                        if(fcalls >= Nmax) return b;
+                    }
+                }
+            }
+            if (a > b) std::swap(a, b);
+
+            double gr = (std::sqrt(5.0) - 1.0) / 2.0;
+            double c = b - gr * (b - a);
+            double d_pt = a + gr * (b - a);
+            
+            h_mat(0,0) = c;
+            double fc = f(p + d * h_mat);
+            h_mat(0,0) = d_pt;
+            double fd = f(p + d * h_mat);
+
+            while ((b - a) > 1e-6) {
+                if (fc < fd) {
+                    b = d_pt;
+                    d_pt = c;
+                    fd = fc;
+                    c = b - gr * (b - a);
+                    h_mat(0,0) = c;
+                    fc = f(p + d * h_mat);
+                } else {
+                    a = c;
+                    c = d_pt;
+                    fc = fd;
+                    d_pt = a + gr * (b - a);
+                    h_mat(0,0) = d_pt;
+                    fd = f(p + d * h_mat);
+                }
+                if(fcalls >= Nmax) break;
+            }
+            return (a + b) / 2.0;
+        };
+
+        std::vector<matrix> D(N);
+        for (int j = 0; j < N; ++j) {
+            D[j] = matrix(N, 1, 0.0);
+            D[j](j, 0) = 1.0;
+        }
+
+        matrix x = x0;
+
+        do {
+            matrix p = x; 
+            matrix p0 = x; 
+
+            for (int j = 0; j < N; ++j) {
+                double h = get_h(p, D[j]);
+
+                matrix h_mat(1, 1, h);
+                p = p + D[j] * h_mat; 
+            }
+
+            if (norm(p - x) < epsilon) {
+                Xopt.x = x; 
+                Xopt.y = ff(x, ud1, ud2);
+                return Xopt;
+
+            }
+
+            for (int j = 0; j < N - 1; ++j) {
+                D[j] = D[j + 1];
+            }
+
+            matrix diff = p - p0;
+            D[N - 1] = diff;
+
+            double h_new = 0.0;
+            if (norm(diff) > 1e-14) {
+                 h_new = get_h(p, D[N - 1]);
+            }
+
+            matrix h_mat_new(1, 1, h_new);
+            matrix p_next = p + D[N - 1] * h_mat_new;
+
+            x = p_next;
+        } while (fcalls <= Nmax);
+
+        // 21: return error
+        throw std::string("Przekroczono maksymalna liczbe wywołań funkcji celu (Nmax).");
+
     }
-    catch (string ex_info)
+    catch (std::string ex_info)
     {
         throw("solution Powell(...):\n" + ex_info);
     }
