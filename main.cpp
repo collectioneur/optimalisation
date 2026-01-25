@@ -775,7 +775,6 @@ void lab4()
 
 void lab5()
 {
-    // ========== CZĘŚĆ A: FUNKCJA TESTOWA WIELOKRYTERIALNA ==========
     cout << "=== LAB 5 - Funkcja testowa wielokryterialna ===" << endl;
     
     try
@@ -784,13 +783,11 @@ void lab5()
         if (!plik_test.is_open())
             throw string("Nie udalo sie otworzyc pliku lab5_test_wielokryterialna.csv!");
         
-        // Nagłówek tabeli
         plik_test << "x1(0),x2(0),";
         plik_test << "x1* (a=1),x2* (a=1),f1* (a=1),f2* (a=1),Liczba wywołań (a=1),";
         plik_test << "x1* (a=10),x2* (a=10),f1* (a=10),f2* (a=10),Liczba wywołań (a=10),";
         plik_test << "x1* (a=100),x2* (a=100),f1* (a=100),f2* (a=100),Liczba wywołań (a=100)\n";
-        
-        // Generator liczb losowych dla punktu startowego
+
         random_device rd;
         mt19937 gen(rd());
         uniform_real_distribution<double> dist_x(-5.0, 5.0);
@@ -798,19 +795,16 @@ void lab5()
         double a_values[] = {1.0, 10.0, 100.0};
         
         cout << "Rozpoczynam optymalizacje funkcji testowej..." << endl;
-        
-        // Pętla po wagach w = 0, 0.01, ..., 1.0
+
         for (int i = 0; i <= 100; ++i)
         {
             double w = i / 100.0;
-            
-            // Losowy punkt startowy (ten sam dla wszystkich wartości a)
+
             double x1_0 = dist_x(gen);
             double x2_0 = dist_x(gen);
             
             plik_test << fixed << setprecision(6) << x1_0 << "," << x2_0;
-            
-            // Dla każdej wartości parametru a
+
             for (int j = 0; j < 3; ++j)
             {
                 double a = a_values[j];
@@ -822,21 +816,18 @@ void lab5()
                 matrix ud1(2, 1);
                 ud1(0, 0) = w;
                 ud1(1, 0) = a;
-                matrix ud2; // pusty
-                
-                // Optymalizacja metodą Powella
+                matrix ud2; 
+
                 solution::clear_calls();
                 solution res = Powell(ff5T_multi, x_start, 1e-6, 10000, ud1, ud2);
                 
                 int total_calls = solution::f_calls;
-                
-                // Oblicz wartości f1 i f2 dla optymalnego rozwiązania
+
                 double x1_opt = res.x(0);
                 double x2_opt = res.x(1);
                 double f1_opt = pow(x1_opt, 2) + pow(x2_opt, 2);
                 double f2_opt = pow(x1_opt - a, 2) + pow(x2_opt - a, 2);
-                
-                // Zapis do CSV
+
                 plik_test << "," << x1_opt << "," << x2_opt << "," 
                          << f1_opt << "," << f2_opt << "," << total_calls;
             }
@@ -856,42 +847,33 @@ void lab5()
     {
         cerr << "Blad w czesci testowej: " << ex << endl;
     }
-    
-    // ========== CZĘŚĆ B: PROBLEM RZECZYWISTY (BELKA) ==========
     cout << "\n=== LAB 5 - Problem rzeczywisty (belka) ===" << endl;
     
-    const double P_force = 2000.0;     // 2 kN = 2000 N
-    const double E_modulus = 120e9;    // 120 GPa = 120 * 10^9 Pa
-    const double rho_density = 8920.0; // kg/m^3
+    const double P_force = 2000.0; 
+    const double E_modulus = 120e9;  
+    const double rho_density = 8920.0; 
 
-    // Ograniczenia
-    const double u_max = 2.5e-3;    // 2.5 mm = 0.0025 m
-    const double sigma_max = 300e6; // 300 MPa = 300 * 10^6 Pa
+    const double u_max = 2.5e-3;   
+    const double sigma_max = 300e6;
 
-    // Granice zmiennych (w metrach)
-    const double l_min = 0.2;  // 200 mm
-    const double l_max = 1.0;  // 1000 mm
-    const double d_min = 0.01; // 10 mm
-    const double d_max = 0.05; // 50 mm
+    const double l_min = 0.2; 
+    const double l_max = 1.0; 
+    const double d_min = 0.01;
+    const double d_max = 0.05;
     try
     {
-        // Otwarcie pliku CSV
         ofstream plik("wyniki_lab5.csv");
         if (!plik.is_open())
             throw string("Nie udalo sie otworzyc pliku do zapisu!");
 
-        // Nagłówek CSV (średnik jako separator dla polskiego Excela)
         plik << "w;l_opt[mm];d_opt[mm];Masa[kg];Ugiecie[mm];Naprezenie[MPa];FunkcjaCelu\n";
 
-        // Otwarcie drugiego pliku dla problemu rzeczywistego
         ofstream plik_rzecz("lab5_problem_rzeczywisty.csv");
         if (!plik_rzecz.is_open())
             throw string("Nie udalo sie otworzyc pliku lab5_problem_rzeczywisty.csv!");
 
-        // Nagłówek dla problemu rzeczywistego
         plik_rzecz << "l(0) [mm],d(0) [mm],l* [mm],d*[mm],masa* [kg],ugięcie* [mm],naprężenie* [Mpa],Liczba wywołań funkcji celu\n";
 
-        // Generator liczb losowych
         random_device rd;
         mt19937 gen(rd());
         uniform_real_distribution<double> dist_l(l_min, l_max);
@@ -900,50 +882,40 @@ void lab5()
         cout << "Rozpoczynam obliczenia dla 101 punktow..." << endl;
 
         matrix ud1(2, 1);
-        matrix ud2; // puste
+        matrix ud2;
 
-        // Pętla po wagach w = 0, 0.01, ..., 1.0
         for (int i = 0; i <= 100; ++i)
         {
             double w = i / 100.0;
             ud1(0, 0) = w;
 
-            // 1. Losowanie punktu startowego
             matrix x_curr(2, 1);
             x_curr(0, 0) = dist_l(gen);
             x_curr(1, 0) = dist_d(gen);
 
-            // Zapamiętaj początkowe wartości
             double l_start = x_curr(0, 0);
             double d_start = x_curr(1, 0);
 
-            // 2. Metoda kary zewnętrznej
-            double c = 100.0;       // Początkowe c (można dobrać eksperymentalnie)
-            double dc = 1.5;        // Mnożnik c
-            int penalty_steps = 15; // Liczba iteracji kary
+            double c = 100.0;      
+            double dc = 1.5; 
+            int penalty_steps = 15;
 
             solution res;
-            
-            // Zapisz liczniki przed optymalizacją
+
             solution::clear_calls();
 
-            // Pętla funkcji kary
             for (int k = 0; k < penalty_steps; ++k)
             {
-                ud1(1, 0) = c; // Ustawienie aktualnego c
+                ud1(1, 0) = c; 
 
-                // Wywołanie Powella (zmniejszone epsilon dla szybkości, ale wystarczające)
-                // Nmax ustawione na np. 2000 per iteracja kary
                 res = Powell(ff5R, x_curr, 1e-6, 2000, ud1, ud2);
 
-                x_curr = res.x; // Aktualizacja punktu startowego
-                c *= dc;        // Zwiększenie kary
+                x_curr = res.x; 
+                c *= dc;      
             }
-            
-            // Odczytaj łączną liczbę wywołań po zakończeniu optymalizacji
+
             int total_calls = solution::f_calls;
 
-            // 3. Obliczenie wyników fizycznych dla znalezionego optimum
             double l_opt = x_curr(0, 0);
             double d_opt = x_curr(1, 0);
 
@@ -952,11 +924,6 @@ void lab5()
             double stress = (32.0 * P_force * l_opt) / (M_PI * pow(d_opt, 3));
             double f_val = w * mass + (1.0 - w) * defl;
 
-            // 4. Zapis do CSV (jednostki przyjazne dla inżyniera: mm, MPa)
-            // Formatowanie z kropką jako separatorem dziesiętnym (Excel sobie poradzi lub trzeba zmienić na przecinek)
-            // Tutaj używam tricku: wypisujemy normalnie, a Excel przy imporcie "Tekst jako kolumny" obsłuży kropkę.
-
-            // Wypisywanie na ekran co 10 iteracji
             if (i % 10 == 0)
             {
                 cout << "Postep: w = " << w << " -> Masa: " << mass << " kg, Ugiecie: " << defl * 1000 << " mm" << endl;
@@ -967,11 +934,10 @@ void lab5()
                  << l_opt * 1000.0 << ";"
                  << d_opt * 1000.0 << ";"
                  << mass << ";"
-                 << defl * 1000.0 << ";" // zamiana na mm
-                 << stress / 1e6 << ";"  // zamiana na MPa
+                 << defl * 1000.0 << ";" 
+                 << stress / 1e6 << ";" 
                  << f_val << "\n";
 
-            // Zapis do pliku problemu rzeczywistego (bez kolumny w)
             plik_rzecz << fixed << setprecision(6)
                        << l_start * 1000.0 << ","
                        << d_start * 1000.0 << ","
@@ -998,9 +964,6 @@ void lab6()
     cout << "=== LAB 6 - Algorytmy Ewolucyjne ===" << endl;
     srand(time(NULL));
 
-    // ==========================================================
-    // Cześć A: Testowa funkcja celu
-    // ==========================================================
     cout << "\n--- Czesc A: Testowa funkcja celu ---" << endl;
     
     int N = 2;
@@ -1014,7 +977,6 @@ void lab6()
     double sigma_values[] = {0.01, 0.1, 1.0, 10.0, 100.0};
     int repetitions = 100;
 
-    // Исправлены заголовки под ваш Excel
     ofstream tab1("lab6_tabela1.csv");
     tab1 << "Początkowa wartość zakresu mutacji;Lp.;x1*;x2*;y*;Liczba wywołań funkcji celu;Minimum globalne [tak/nie]\n";
 
@@ -1026,11 +988,10 @@ void lab6()
         double sigma_val = sigma_values[s_idx];
         matrix sigma0(N, 1, sigma_val);
         
-        // Переменные для средних значений (только успешных)
         double sum_f = 0.0;
         double sum_calls = 0.0;
-        double sum_x1 = 0.0; // Добавлено для Таблицы 2
-        double sum_x2 = 0.0; // Добавлено для Таблицы 2
+        double sum_x1 = 0.0;
+        double sum_x2 = 0.0;
         int success_count = 0;
 
         cout << "Przetwarzanie sigma = " << sigma_val << "..." << endl;
@@ -1041,34 +1002,28 @@ void lab6()
             
             solution res = EA(ff6T, N, lb, ub, pop_size_mi, pop_size_lambda, sigma0, epsilon, Nmax, NAN, NAN);
             
-            // Определяем статус для Таблицы 1
-            string status_str = (res.flag == 1) ? "tak" : "nie"; // ВАЖНО: res.flag должен выставляться в EA
+            string status_str = (res.flag == 1) ? "tak" : "nie";
 
-            // Запись в Таблицу 1 (формат под Excel)
             tab1 << sigma_val << ";" << (i+1) << ";"
                  << res.x(0) << ";" << res.x(1) << ";" 
                  << res.y(0) << ";" << solution::f_calls << ";"
                  << status_str << "\n";
 
-            // Статистика для Таблицы 2 (только если найден глобальный минимум)
-            // Критерий успеха: очень близко к 0 (например < 0.05)
             if (res.y(0) < 0.05) 
             {
                 sum_f += res.y(0);
                 sum_calls += solution::f_calls;
-                sum_x1 += res.x(0); // Суммируем координаты
+                sum_x1 += res.x(0);
                 sum_x2 += res.x(1);
                 success_count++;
             }
         }
 
-        // Вычисляем средние
         double avg_f = (success_count > 0) ? sum_f / success_count : 0.0;
         double avg_calls = (success_count > 0) ? sum_calls / success_count : 0.0;
         double avg_x1 = (success_count > 0) ? sum_x1 / success_count : 0.0;
         double avg_x2 = (success_count > 0) ? sum_x2 / success_count : 0.0;
 
-        // Запись в Таблицу 2 (формат под Excel: x1, x2, y, calls, success_count)
         tab2 << sigma_val << ";" 
              << avg_x1 << ";" << avg_x2 << ";" 
              << avg_f << ";" << avg_calls << ";" 
@@ -1079,58 +1034,53 @@ void lab6()
     tab2.close();
     cout << "Wyniki czesci A zapisano." << endl;
 
-    // ==========================================================
-    // Cześć B: Problem rzeczywisty
-    // ==========================================================
     cout << "\n--- Czesc B: Problem rzeczywisty ---" << endl;
 
-    // Генерация референса (b1=2, b2=3)
-    matrix b_ref(2, 1);
-    b_ref(0) = 2.0;
-    b_ref(1) = 3.0;
-    
-    matrix Y0(4, 1); 
-    matrix *Y_ref = solve_ode(df6, 0, 0.1, 100, Y0, b_ref, NAN);
-    
-    int n_points = get_len(Y_ref[0]);
-    matrix ref_data(n_points, 2);
-    for(int i=0; i<n_points; ++i) {
-        ref_data(i, 0) = Y_ref[1](i, 0); 
-        ref_data(i, 1) = Y_ref[1](i, 2); 
+    ifstream file("lab6_experiment.txt");
+    if (!file.is_open()) {
+        cout << "Error: Nie mozna otworzyc pliku lab6_experiment.txt!" << endl;
+        return;
     }
-    
-    // Оптимизация
+
+    vector<double> x1_vec, x2_vec;
+    double val1, val2;
+    char sep;
+
+    while (file >> val1 >> sep >> val2 >> sep) {
+        x1_vec.push_back(val1);
+        x2_vec.push_back(val2);
+    }
+    file.close();
+
+    int n_points = x1_vec.size();
+    matrix ref_data(n_points, 2);
+    for (int i = 0; i < n_points; ++i) {
+        ref_data(i, 0) = x1_vec[i];
+        ref_data(i, 1) = x2_vec[i];
+    }
+    cout << "Wczytano " << n_points << " punktow referencyjnych." << endl;
+
     matrix lb_real(2, 1, 0.1);
     matrix ub_real(2, 1, 3.0);
-    matrix sigma0_real(2, 1, 0.1); 
+    matrix sigma0_real(2, 1, 0.5);
 
     solution::clear_calls();
-    solution sol_real = EA(ff6R, 2, lb_real, ub_real, 20, 40, sigma0_real, 1e-4, 2000, ref_data, NAN);
+    solution sol_real = EA(ff6R, 2, lb_real, ub_real, 20, 40, sigma0_real, 1e-4, 5000, ref_data, NAN);
 
-    // Таблица 3
     ofstream tab3("lab6_tabela3.csv");
     tab3 << "b1*;b2*;y*;Liczba wywołań funkcji celu\n";
     tab3 << sol_real.x(0) << ";" << sol_real.x(1) << ";" << sol_real.y(0) << ";" << solution::f_calls << "\n";
     tab3.close();
 
-    // Симуляция
-    matrix *Y_opt = solve_ode(df6, 0, 0.1, 100, Y0, sol_real.x, NAN);
+    matrix Y0(4, 1);
+    matrix *Y_opt = solve_ode(df6, 0, 0.1, (n_points - 1) * 0.1, Y0, sol_real.x, NAN);
     
     ofstream sim_out("lab6_symulacja.csv");
-    // Заголовок пропускаем или делаем простым, так как в Excel сложная шапка
     sim_out << "t;x1_ref;x2_ref;x1_opt;x2_opt\n";
-    
-    for(int i=0; i<n_points; ++i) {
-        sim_out << Y_ref[0](i) << ";"       
-                << ref_data(i, 0) << ";"    
-                << ref_data(i, 1) << ";"    
-                << Y_opt[1](i, 0) << ";"    
-                << Y_opt[1](i, 2) << "\n";  
+    for (int i = 0; i < n_points; ++i) {
+        sim_out << i * 0.1 << ";" << ref_data(i, 0) << ";" << ref_data(i, 1) << ";"
+                << Y_opt[1](i, 0) << ";" << Y_opt[1](i, 2) << "\n";
     }
     sim_out.close();
-
-    delete[] Y_ref;
     delete[] Y_opt;
-
-    cout << "Wyniki czesci B zapisano." << endl;
 }
