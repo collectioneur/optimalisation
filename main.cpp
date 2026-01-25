@@ -992,40 +992,45 @@ void lab5()
         cerr << "Blad krytyczny: " << ex << endl;
     }
 }
+
 void lab6()
 {
     cout << "=== LAB 6 - Algorytmy Ewolucyjne ===" << endl;
     srand(time(NULL));
 
     // ==========================================================
-    // Cześć A: Testowa funkcja celu (Rastrigin-like)
+    // Cześć A: Testowa funkcja celu
     // ==========================================================
     cout << "\n--- Czesc A: Testowa funkcja celu ---" << endl;
     
     int N = 2;
     matrix lb(N, 1, -5.0);
     matrix ub(N, 1, 5.0);
-    double epsilon = 1e-6; // Точность
+    double epsilon = 1e-6; 
     int Nmax = 10000;
-    int pop_size_mi = 20;   // mu
-    int pop_size_lambda = 40; // lambda
+    int pop_size_mi = 20;   
+    int pop_size_lambda = 40; 
 
     double sigma_values[] = {0.01, 0.1, 1.0, 10.0, 100.0};
     int repetitions = 100;
 
+    // Исправлены заголовки под ваш Excel
     ofstream tab1("lab6_tabela1.csv");
-    tab1 << "sigma;run;x1;x2;f(x);calls;status\n";
+    tab1 << "Początkowa wartość zakresu mutacji;Lp.;x1*;x2*;y*;Liczba wywołań funkcji celu;Minimum globalne [tak/nie]\n";
 
     ofstream tab2("lab6_tabela2.csv");
-    tab2 << "sigma;avg_f;avg_calls;success_rate_%\n";
+    tab2 << "Początkowa wartość zakresu mutacji;x1*;x2*;y*;Liczba wywołań funkcji celu;Liczba minimów globalnych\n";
 
     for (int s_idx = 0; s_idx < 5; ++s_idx)
     {
         double sigma_val = sigma_values[s_idx];
         matrix sigma0(N, 1, sigma_val);
         
+        // Переменные для средних значений (только успешных)
         double sum_f = 0.0;
         double sum_calls = 0.0;
+        double sum_x1 = 0.0; // Добавлено для Таблицы 2
+        double sum_x2 = 0.0; // Добавлено для Таблицы 2
         int success_count = 0;
 
         cout << "Przetwarzanie sigma = " << sigma_val << "..." << endl;
@@ -1034,112 +1039,98 @@ void lab6()
         {
             solution::clear_calls();
             
-            // Запуск EA
-            // ud1, ud2 не нужны для ff6T
             solution res = EA(ff6T, N, lb, ub, pop_size_mi, pop_size_lambda, sigma0, epsilon, Nmax, NAN, NAN);
             
-            // Запись в Таблицу 1
+            // Определяем статус для Таблицы 1
+            string status_str = (res.flag == 1) ? "tak" : "nie"; // ВАЖНО: res.flag должен выставляться в EA
+
+            // Запись в Таблицу 1 (формат под Excel)
             tab1 << sigma_val << ";" << (i+1) << ";"
                  << res.x(0) << ";" << res.x(1) << ";" 
                  << res.y(0) << ";" << solution::f_calls << ";"
-                 << res.flag << "\n"; // flag=1 если нашли минимум
+                 << status_str << "\n";
 
-            // Статистика для Таблицы 2
-            // Считаем успехом, если значение функции достаточно мало (глобальный минимум = 0)
-            if (res.y(0) < 0.05) // Порог принятия глобального минимума
+            // Статистика для Таблицы 2 (только если найден глобальный минимум)
+            // Критерий успеха: очень близко к 0 (например < 0.05)
+            if (res.y(0) < 0.05) 
             {
                 sum_f += res.y(0);
                 sum_calls += solution::f_calls;
+                sum_x1 += res.x(0); // Суммируем координаты
+                sum_x2 += res.x(1);
                 success_count++;
             }
         }
 
+        // Вычисляем средние
         double avg_f = (success_count > 0) ? sum_f / success_count : 0.0;
         double avg_calls = (success_count > 0) ? sum_calls / success_count : 0.0;
-        double rate = (double)success_count / repetitions * 100.0;
+        double avg_x1 = (success_count > 0) ? sum_x1 / success_count : 0.0;
+        double avg_x2 = (success_count > 0) ? sum_x2 / success_count : 0.0;
 
-        tab2 << sigma_val << ";" << avg_f << ";" << avg_calls << ";" << rate << "\n";
+        // Запись в Таблицу 2 (формат под Excel: x1, x2, y, calls, success_count)
+        tab2 << sigma_val << ";" 
+             << avg_x1 << ";" << avg_x2 << ";" 
+             << avg_f << ";" << avg_calls << ";" 
+             << success_count << "\n";
     }
 
     tab1.close();
     tab2.close();
-    cout << "Wyniki czesci A zapisano do lab6_tabela1.csv i lab6_tabela2.csv" << endl;
+    cout << "Wyniki czesci A zapisano." << endl;
 
     // ==========================================================
     // Cześć B: Problem rzeczywisty
     // ==========================================================
     cout << "\n--- Czesc B: Problem rzeczywisty ---" << endl;
 
-    // 1. Генерация эталонных данных (так как polozenia.txt отсутствует)
-    // Используем "секретные" значения b1=2, b2=3 (как в примере проверки)
-    cout << "Generowanie danych referencyjnych (b1=2, b2=3)..." << endl;
-    
+    // Генерация референса (b1=2, b2=3)
     matrix b_ref(2, 1);
     b_ref(0) = 2.0;
     b_ref(1) = 3.0;
     
-    matrix Y0(4, 1); // Нулевые начальные условия
+    matrix Y0(4, 1); 
     matrix *Y_ref = solve_ode(df6, 0, 0.1, 100, Y0, b_ref, NAN);
     
-    // Формируем матрицу данных для передачи в функцию цели
-    // Нам нужны только позиции x1 и x2. Y_ref[1] содержит [x1, v1, x2, v2]
     int n_points = get_len(Y_ref[0]);
     matrix ref_data(n_points, 2);
     for(int i=0; i<n_points; ++i) {
-        ref_data(i, 0) = Y_ref[1](i, 0); // x1
-        ref_data(i, 1) = Y_ref[1](i, 2); // x2
+        ref_data(i, 0) = Y_ref[1](i, 0); 
+        ref_data(i, 1) = Y_ref[1](i, 2); 
     }
     
-    // Сохраним polozenia.txt для проформы (как будто он был)
-    ofstream file_pos("polozenia_generated.txt");
-    for(int i=0; i<n_points; ++i) {
-        file_pos << Y_ref[0](i) << " " << Y_ref[1](i, 0) << " " << Y_ref[1](i, 2) << "\n";
-    }
-    file_pos.close();
-
-    // 2. Оптимизация
-    // Ищем b1, b2 в диапазоне [0.1, 3]
+    // Оптимизация
     matrix lb_real(2, 1, 0.1);
     matrix ub_real(2, 1, 3.0);
-    matrix sigma0_real(2, 1, 0.1); // Небольшая начальная мутация
+    matrix sigma0_real(2, 1, 0.1); 
 
-    // Одна оптимизация
-    cout << "Rozpoczynanie optymalizacji b1, b2..." << endl;
     solution::clear_calls();
-    
-    // Передаем ref_data как ud1
     solution sol_real = EA(ff6R, 2, lb_real, ub_real, 20, 40, sigma0_real, 1e-4, 2000, ref_data, NAN);
 
-    cout << "Znalezione wartosci:" << endl;
-    cout << "b1 = " << sol_real.x(0) << " (Oczekiwane ~2.0)" << endl;
-    cout << "b2 = " << sol_real.x(1) << " (Oczekiwane ~3.0)" << endl;
-    cout << "Blad dopasowania = " << sol_real.y(0) << endl;
-
-    // 3. Запись результатов (Tabela 3)
+    // Таблица 3
     ofstream tab3("lab6_tabela3.csv");
-    tab3 << "b1_opt;b2_opt;Error;Calls\n";
+    tab3 << "b1*;b2*;y*;Liczba wywołań funkcji celu\n";
     tab3 << sol_real.x(0) << ";" << sol_real.x(1) << ";" << sol_real.y(0) << ";" << solution::f_calls << "\n";
     tab3.close();
 
-    // 4. Симуляция с найденными параметрами и запись для графика
+    // Симуляция
     matrix *Y_opt = solve_ode(df6, 0, 0.1, 100, Y0, sol_real.x, NAN);
     
     ofstream sim_out("lab6_symulacja.csv");
+    // Заголовок пропускаем или делаем простым, так как в Excel сложная шапка
     sim_out << "t;x1_ref;x2_ref;x1_opt;x2_opt\n";
     
     for(int i=0; i<n_points; ++i) {
-        sim_out << Y_ref[0](i) << ";"       // t
-                << ref_data(i, 0) << ";"    // x1 ref
-                << ref_data(i, 1) << ";"    // x2 ref
-                << Y_opt[1](i, 0) << ";"    // x1 opt
-                << Y_opt[1](i, 2) << "\n";  // x2 opt
+        sim_out << Y_ref[0](i) << ";"       
+                << ref_data(i, 0) << ";"    
+                << ref_data(i, 1) << ";"    
+                << Y_opt[1](i, 0) << ";"    
+                << Y_opt[1](i, 2) << "\n";  
     }
     sim_out.close();
 
-    // Чистка памяти
     delete[] Y_ref;
     delete[] Y_opt;
 
-    cout << "Wyniki czesci B zapisano do lab6_tabela3.csv i lab6_symulacja.csv" << endl;
-    cout << "=== KONIEC LAB 6 ===" << endl;
+    cout << "Wyniki czesci B zapisano." << endl;
 }
