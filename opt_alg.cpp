@@ -1227,9 +1227,11 @@ solution EA(matrix (*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, i
 
         int fcalls = 0;
 
+        // Параметры алгоритма (из лекций/PDF)
         double alpha = std::pow((double)N, -0.5);
         double beta = std::pow(2.0 * N, -0.25);
 
+        // Инициализация популяции
         std::vector<Individual> P(mi);
         for (int j = 0; j < mi; ++j)
         {
@@ -1247,25 +1249,56 @@ solution EA(matrix (*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, i
             P[j].y = ff(P[j].x, ud1, ud2);
             P[j].fit_val = P[j].y(0, 0);
             fcalls++;
+            
+            // Проверка на лучшее решение сразу при инициализации
+            if (j == 0 || P[j].fit_val < Xopt.y(0,0)) {
+               Xopt.x = P[j].x;
+               Xopt.y = P[j].y;
+            }
         }
 
         Individual best_ind = P[0];
-        for (const auto &ind : P)
-        {
-            if (ind.fit_val < best_ind.fit_val)
-                best_ind = ind;
+        // Найти лучшего в начальной популяции
+        for (const auto &ind : P) {
+            if (ind.fit_val < best_ind.fit_val) best_ind = ind;
         }
+        Xopt.x = best_ind.x;
+        Xopt.y = best_ind.y;
 
-        do
+        while (true) // Главный цикл
         {
+            // Проверка критерия останова по вызовам функции ДО итерации
+             if (fcalls > Nmax) {
+                 Xopt.flag = 0;
+                 break; 
+             }
+             // Проверка критерия точности (для глобального минимума 0)
+             if (best_ind.fit_val < epsilon) {
+                 Xopt.flag = 1;
+                 break;
+             }
+
+            // Колесо рулетки (адаптировано для минимизации)
+            // Используем преобразование 1/(val + small_eps) или сдвиг, если значения отрицательные
+            // В задаче lab6 минимум = 0, значения >= 0.
             std::vector<double> phi(mi);
             double Phi = 0.0;
+            
+            // Находим max значение, чтобы инвертировать вероятность (худшие имеют малую вероятность)
+            double max_val = P[0].fit_val;
+            double min_val = P[0].fit_val;
+            for(auto& ind : P) {
+                if(ind.fit_val > max_val) max_val = ind.fit_val;
+                if(ind.fit_val < min_val) min_val = ind.fit_val;
+            }
 
             for (int j = 0; j < mi; ++j)
             {
+                // Простая эвристика для рулетки при минимизации: (max - curr) + epsilon
+                // Или классическая 1/f, но нужно быть осторожным с нулем.
+                // В PDF формула: phi = 1 / f(x). Защитимся от деления на 0.
                 double val = P[j].fit_val;
-                if (std::abs(val) < 1e-14)
-                    val = 1e-14;
+                if (val < 1e-15) val = 1e-15; 
                 phi[j] = 1.0 / val;
                 Phi += phi[j];
             }
@@ -1277,98 +1310,82 @@ solution EA(matrix (*ff)(matrix, matrix, matrix), int N, matrix lb, matrix ub, i
                 q[j] = prev_q + (phi[j] / Phi);
                 prev_q = q[j];
             }
-            q[mi - 1] = 1.0;
+            q[mi - 1] = 1.1; // Гарантия верхней границы > 1.0 для float погрешностей
 
-            double a = d_norm(gen);
             std::vector<Individual> T(lambda);
 
+            // Генерация потомков
             for (int j = 0; j < lambda; ++j)
             {
+                // Селекция родителя A
                 double r1 = d_uni(gen);
                 int kA = 0;
-                for (int k = 0; k < mi; ++k)
-                {
-                    if (r1 <= q[k])
-                    {
-                        kA = k;
-                        break;
-                    }
+                for (int k = 0; k < mi; ++k) {
+                    if (r1 <= q[k]) { kA = k; break; }
                 }
                 Individual A = P[kA];
 
+                // Селекция родителя B
                 double r2 = d_uni(gen);
                 int kB = 0;
-                for (int k = 0; k < mi; ++k)
-                {
-                    if (r2 <= q[k])
-                    {
-                        kB = k;
-                        break;
-                    }
+                for (int k = 0; k < mi; ++k) {
+                    if (r2 <= q[k]) { kB = k; break; }
                 }
                 Individual B = P[kB];
 
-                // POPRAWKA: Inicjalizacja macierzy jako Nx1
                 T[j].x = matrix(N, 1);
                 T[j].sigma = matrix(N, 1);
 
                 double r_cross = d_uni(gen);
+                double a_global = d_norm(gen); // Общий множитель мутации
 
-                // Jedna pętla łącząca krzyżowanie i mutację
                 for (int d = 0; d < N; ++d)
                 {
-                    // Krzyżowanie (zmienne pomocnicze)
+                    // Арифметическое скрещивание
                     double cross_x = r_cross * A.x(d, 0) + (1.0 - r_cross) * B.x(d, 0);
                     double cross_sigma = r_cross * A.sigma(d, 0) + (1.0 - r_cross) * B.sigma(d, 0);
 
-                    // Mutacja Sigma
-                    double b_sigma = d_norm(gen);
-                    // Zapis do macierzy Nx1 używając (d, 0)
-                    T[j].sigma(d, 0) = cross_sigma * std::exp(alpha * a + beta * b_sigma);
+                    // Мутация
+                    double b_sigma = d_norm(gen); 
+                    T[j].sigma(d, 0) = cross_sigma * std::exp(alpha * a_global + beta * b_sigma);
 
-                    // Mutacja X
                     double b_x = d_norm(gen);
                     T[j].x(d, 0) = cross_x + b_x * T[j].sigma(d, 0);
+
+                    // !!! ВАЖНО: ПРОВЕРКА ОГРАНИЧЕНИЙ (Lab 6) !!!
+                    if (T[j].x(d, 0) < lb(d, 0)) T[j].x(d, 0) = lb(d, 0);
+                    if (T[j].x(d, 0) > ub(d, 0)) T[j].x(d, 0) = ub(d, 0);
                 }
 
                 T[j].y = ff(T[j].x, ud1, ud2);
                 T[j].fit_val = T[j].y(0, 0);
                 fcalls++;
-
-                if (fcalls > Nmax)
-                    break;
             }
 
-            if (fcalls > Nmax)
-            {
-                throw std::string("Przekroczono maksymalna liczbe wywołań funkcji celu (Nmax).");
-            }
-
+            // Сукцессия (mi + lambda)
             std::vector<Individual> combined = P;
             combined.insert(combined.end(), T.begin(), T.end());
 
             std::sort(combined.begin(), combined.end(), [](const Individual &a, const Individual &b)
                       { return a.fit_val < b.fit_val; });
 
+            // Отбираем лучших mi
             for (int k = 0; k < mi; ++k)
             {
                 P[k] = combined[k];
             }
 
-            best_ind = P[0];
+            best_ind = P[0]; // Лучший всегда первый после сортировки
+            Xopt.x = best_ind.x;
+            Xopt.y = best_ind.y;
+            
+        } 
+        solution::f_calls += fcalls;
 
-        } while (best_ind.fit_val >= epsilon);
-
-        Xopt.x = best_ind.x;
-        Xopt.y = best_ind.y;
         return Xopt;
     }
     catch (std::string ex_info)
     {
         throw("solution EA(...):\n" + ex_info);
-    }
-    catch (...)
-    {
-        throw std::string("solution EA(...):\nNieznany blad.");
     }
 }

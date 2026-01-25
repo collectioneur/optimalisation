@@ -39,3 +39,5 @@ matrix hypothesis(matrix theta, matrix X);
 matrix read_matrix_from_file(std::string filename, int rows, int cols);
 
 matrix ff6T(matrix x, matrix ud1, matrix ud2);
+matrix df6(double t, matrix Y, matrix ud1, matrix ud2);
+matrix ff6R(matrix x, matrix ud1, matrix ud2);

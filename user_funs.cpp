@@ -646,3 +646,91 @@ matrix ff6T(matrix x, matrix ud1, matrix ud2)
     y(0) = pow(x1, 2) + pow(x2, 2) - cos(2.5 * M_PI * x1) - cos(2.5 * M_PI * x2) + 2.0;
     return y;
 }
+
+// --- LAB 6 ---
+
+// Уравнения движения (State: x1, v1, x2, v2)
+matrix df6(double t, matrix Y, matrix ud1, matrix ud2)
+{
+    double m1 = 1.0;
+    double m2 = 2.0;
+    double k1 = 4.0;
+    double k2 = 6.0;
+    double F = 5.0; // Сила приложенная к нижнему грузу
+
+    // Переменные решения (оптимизируемые параметры) b1, b2 передаются в ud1
+    double b1 = ud1(0);
+    double b2 = ud1(1);
+
+    matrix dY(4, 1);
+    
+    double x1 = Y(0);
+    double v1 = Y(1);
+    double x2 = Y(2);
+    double v2 = Y(3);
+
+    dY(0) = v1;
+    dY(2) = v2;
+
+    // Уравнения из PDF:
+    // m1*a1 + b1*v1 + b2*(v1-v2) + k1*x1 + k2*(x1-x2) = 0
+    // => a1 = (-b1*v1 - b2*(v1-v2) - k1*x1 - k2*(x1-x2)) / m1
+    dY(1) = (-b1 * v1 - b2 * (v1 - v2) - k1 * x1 - k2 * (x1 - x2)) / m1;
+
+    // m2*a2 - b2*(v1-v2) - k2*(x1-x2) = F
+    // => a2 = (F + b2*(v1-v2) + k2*(x1-x2)) / m2
+    dY(3) = (F + b2 * (v1 - v2) + k2 * (x1 - x2)) / m2;
+
+    return dY;
+}
+
+// Функция цели для реальной задачи Lab 6
+// x - вектор параметров [b1, b2]
+// ud1 - матрица с референсными данными (из polozenia.txt)
+matrix ff6R(matrix x, matrix ud1, matrix ud2)
+{
+    matrix y(1, 1);
+    
+    // Параметры b1, b2
+    matrix params(2, 1);
+    params(0) = x(0);
+    params(1) = x(1);
+
+    // Начальные условия (все нули)
+    matrix Y0(4, 1); // 0.0
+
+    // Симуляция
+    // ud1 содержит референсные данные: t, x1_ref, x2_ref
+    // Нам нужно симулировать с тем же шагом, что и референс
+    double t_end = 100.0;
+    double dt = 0.1;
+    
+    // Передаем params (b1, b2) как ud1 в решатель ODE
+    matrix *Y = solve_ode(df6, 0, dt, t_end, Y0, params, NAN);
+
+    // Считаем ошибку (MSE или SSE)
+    double error = 0.0;
+    int n = get_len(Y[0]);
+    int ref_rows = get_rows(ud1);
+    
+    // Берем минимум длины, чтобы не выйти за границы
+    int loop_n = (n < ref_rows) ? n : ref_rows;
+
+    for(int i = 0; i < loop_n; ++i)
+    {
+        double x1_sim = Y[1](i, 0);
+        double x2_sim = Y[1](i, 2);
+        
+        // В ud1 (референс) ожидаем структуру: col0=x1, col1=x2 (или аналогично)
+        // Предполагаем, что ud1 передан как матрица N x 2
+        double x1_ref = ud1(i, 0);
+        double x2_ref = ud1(i, 1);
+
+        error += pow(x1_sim - x1_ref, 2) + pow(x2_sim - x2_ref, 2);
+    }
+    
+    y(0) = error / loop_n; // Среднеквадратичная ошибка
+
+    delete[] Y;
+    return y;
+}
