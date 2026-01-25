@@ -27,6 +27,7 @@ matrix penalty_objective_function_lab4R(matrix x, matrix ud1, matrix ud2);
 matrix ff5T(matrix x, matrix ud1, matrix ud2); // Funkcja celu
 matrix gf5T(matrix x, matrix ud1, matrix ud2); // Gradient
 matrix Hf5T(matrix x, matrix ud1, matrix ud2); // Hesjan
+matrix ff5T_multi(matrix x, matrix ud1, matrix ud2); // Funkcja wielokryterialna testowa
 
 // Problem rzeczywisty (Regresja logistyczna)
 matrix ff5R(matrix theta, matrix ud1, matrix ud2); // Funkcja kosztu

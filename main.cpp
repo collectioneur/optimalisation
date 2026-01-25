@@ -774,6 +774,91 @@ void lab4()
 
 void lab5()
 {
+    // ========== CZĘŚĆ A: FUNKCJA TESTOWA WIELOKRYTERIALNA ==========
+    cout << "=== LAB 5 - Funkcja testowa wielokryterialna ===" << endl;
+    
+    try
+    {
+        ofstream plik_test("lab5_test_wielokryterialna.csv");
+        if (!plik_test.is_open())
+            throw string("Nie udalo sie otworzyc pliku lab5_test_wielokryterialna.csv!");
+        
+        // Nagłówek tabeli
+        plik_test << "x1(0),x2(0),";
+        plik_test << "x1* (a=1),x2* (a=1),f1* (a=1),f2* (a=1),Liczba wywołań (a=1),";
+        plik_test << "x1* (a=10),x2* (a=10),f1* (a=10),f2* (a=10),Liczba wywołań (a=10),";
+        plik_test << "x1* (a=100),x2* (a=100),f1* (a=100),f2* (a=100),Liczba wywołań (a=100)\n";
+        
+        // Generator liczb losowych dla punktu startowego
+        random_device rd;
+        mt19937 gen(rd());
+        uniform_real_distribution<double> dist_x(-5.0, 5.0);
+        
+        double a_values[] = {1.0, 10.0, 100.0};
+        
+        cout << "Rozpoczynam optymalizacje funkcji testowej..." << endl;
+        
+        // Pętla po wagach w = 0, 0.01, ..., 1.0
+        for (int i = 0; i <= 100; ++i)
+        {
+            double w = i / 100.0;
+            
+            // Losowy punkt startowy (ten sam dla wszystkich wartości a)
+            double x1_0 = dist_x(gen);
+            double x2_0 = dist_x(gen);
+            
+            plik_test << fixed << setprecision(6) << x1_0 << "," << x2_0;
+            
+            // Dla każdej wartości parametru a
+            for (int j = 0; j < 3; ++j)
+            {
+                double a = a_values[j];
+                
+                matrix x_start(2, 1);
+                x_start(0) = x1_0;
+                x_start(1) = x2_0;
+                
+                matrix ud1(2, 1);
+                ud1(0, 0) = w;
+                ud1(1, 0) = a;
+                matrix ud2; // pusty
+                
+                // Optymalizacja metodą Powella
+                solution::clear_calls();
+                solution res = Powell(ff5T_multi, x_start, 1e-6, 10000, ud1, ud2);
+                
+                int total_calls = solution::f_calls;
+                
+                // Oblicz wartości f1 i f2 dla optymalnego rozwiązania
+                double x1_opt = res.x(0);
+                double x2_opt = res.x(1);
+                double f1_opt = pow(x1_opt, 2) + pow(x2_opt, 2);
+                double f2_opt = pow(x1_opt - a, 2) + pow(x2_opt - a, 2);
+                
+                // Zapis do CSV
+                plik_test << "," << x1_opt << "," << x2_opt << "," 
+                         << f1_opt << "," << f2_opt << "," << total_calls;
+            }
+            
+            plik_test << "\n";
+            
+            if (i % 20 == 0)
+            {
+                cout << "Postep: w = " << w << " zakonczone" << endl;
+            }
+        }
+        
+        plik_test.close();
+        cout << "Zakonczono funkcje testowa. Wyniki w 'lab5_test_wielokryterialna.csv'." << endl;
+    }
+    catch (string ex)
+    {
+        cerr << "Blad w czesci testowej: " << ex << endl;
+    }
+    
+    // ========== CZĘŚĆ B: PROBLEM RZECZYWISTY (BELKA) ==========
+    cout << "\n=== LAB 5 - Problem rzeczywisty (belka) ===" << endl;
+    
     const double P_force = 2000.0;     // 2 kN = 2000 N
     const double E_modulus = 120e9;    // 120 GPa = 120 * 10^9 Pa
     const double rho_density = 8920.0; // kg/m^3
@@ -797,6 +882,14 @@ void lab5()
         // Nagłówek CSV (średnik jako separator dla polskiego Excela)
         plik << "w;l_opt[mm];d_opt[mm];Masa[kg];Ugiecie[mm];Naprezenie[MPa];FunkcjaCelu\n";
 
+        // Otwarcie drugiego pliku dla problemu rzeczywistego
+        ofstream plik_rzecz("lab5_problem_rzeczywisty.csv");
+        if (!plik_rzecz.is_open())
+            throw string("Nie udalo sie otworzyc pliku lab5_problem_rzeczywisty.csv!");
+
+        // Nagłówek dla problemu rzeczywistego
+        plik_rzecz << "l(0) [mm],d(0) [mm],l* [mm],d*[mm],masa* [kg],ugięcie* [mm],naprężenie* [Mpa],Liczba wywołań funkcji celu\n";
+
         // Generator liczb losowych
         random_device rd;
         mt19937 gen(rd());
@@ -819,12 +912,19 @@ void lab5()
             x_curr(0, 0) = dist_l(gen);
             x_curr(1, 0) = dist_d(gen);
 
+            // Zapamiętaj początkowe wartości
+            double l_start = x_curr(0, 0);
+            double d_start = x_curr(1, 0);
+
             // 2. Metoda kary zewnętrznej
             double c = 100.0;       // Początkowe c (można dobrać eksperymentalnie)
             double dc = 1.5;        // Mnożnik c
             int penalty_steps = 15; // Liczba iteracji kary
 
             solution res;
+            
+            // Zapisz liczniki przed optymalizacją
+            solution::clear_calls();
 
             // Pętla funkcji kary
             for (int k = 0; k < penalty_steps; ++k)
@@ -838,6 +938,9 @@ void lab5()
                 x_curr = res.x; // Aktualizacja punktu startowego
                 c *= dc;        // Zwiększenie kary
             }
+            
+            // Odczytaj łączną liczbę wywołań po zakończeniu optymalizacji
+            int total_calls = solution::f_calls;
 
             // 3. Obliczenie wyników fizycznych dla znalezionego optimum
             double l_opt = x_curr(0, 0);
@@ -866,10 +969,22 @@ void lab5()
                  << defl * 1000.0 << ";" // zamiana na mm
                  << stress / 1e6 << ";"  // zamiana na MPa
                  << f_val << "\n";
+
+            // Zapis do pliku problemu rzeczywistego (bez kolumny w)
+            plik_rzecz << fixed << setprecision(6)
+                       << l_start * 1000.0 << ","
+                       << d_start * 1000.0 << ","
+                       << l_opt * 1000.0 << ","
+                       << d_opt * 1000.0 << ","
+                       << mass << ","
+                       << defl * 1000.0 << ","
+                       << stress / 1e6 << ","
+                       << total_calls << "\n";
         }
 
         plik.close();
-        cout << "Zakonczono. Wyniki zapisano w 'wyniki_lab5.csv'." << endl;
+        plik_rzecz.close();
+        cout << "Zakonczono. Wyniki zapisano w 'wyniki_lab5.csv' i 'lab5_problem_rzeczywisty.csv'." << endl;
     }
     catch (string ex)
     {

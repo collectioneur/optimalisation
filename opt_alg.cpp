@@ -1173,6 +1173,7 @@ solution Powell(matrix (*ff)(matrix, matrix, matrix), matrix x0, double epsilon,
             {
                 Xopt.x = x;
                 Xopt.y = ff(x, ud1, ud2);
+                solution::f_calls += fcalls; // Zapisz liczbę wywołań
                 return Xopt;
             }
 

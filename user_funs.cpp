@@ -430,6 +430,27 @@ matrix ff5T(matrix x, matrix ud1, matrix ud2)
     return y;
 }
 
+// Funkcja wielokryterialna testowa dla Lab 5
+// ud1(0,0) = w (waga)
+// ud1(1,0) = a (parametr skalujący)
+matrix ff5T_multi(matrix x, matrix ud1, matrix ud2)
+{
+    solution::f_calls++;
+    double x1 = x(0);
+    double x2 = x(1);
+    double w = ud1(0, 0);
+    double a = ud1(1, 0);
+    
+    // Dwie funkcje celu
+    double f1 = pow(x1, 2) + pow(x2, 2);           // f1(x) = x1^2 + x2^2
+    double f2 = pow(x1 - a, 2) + pow(x2 - a, 2);   // f2(x) = (x1-a)^2 + (x2-a)^2
+    
+    // Funkcja skalarna: F(x) = w*f1 + (1-w)*f2
+    matrix y(1, 1);
+    y(0) = w * f1 + (1.0 - w) * f2;
+    return y;
+}
+
 // Gradient funkcji testowej
 matrix gf5T(matrix x, matrix ud1, matrix ud2)
 {
