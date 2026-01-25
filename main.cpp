@@ -30,24 +30,25 @@ int main()
 {
     try
     {
-        double l_test = 0.5;   // 500 mm = 0.5 m
-        double d_test = 0.025; // 25 mm = 0.025 m
-        double P = 2000.0;
-        double E = 120e9;
-        double rho = 8920.0;
-        double m = (M_PI * pow(d_test, 2) * l_test * rho) / 4.0;
-        double u = (64.0 * P * pow(l_test, 3)) / (3.0 * E * M_PI * pow(d_test, 4));
-        double sigma = (32.0 * P * l_test) / (M_PI * pow(d_test, 3));
+        // double l_test = 0.5;   // 500 mm = 0.5 m
+        // double d_test = 0.025; // 25 mm = 0.025 m
+        // double P = 2000.0;
+        // double E = 120e9;
+        // double rho = 8920.0;
+        // double m = (M_PI * pow(d_test, 2) * l_test * rho) / 4.0;
+        // double u = (64.0 * P * pow(l_test, 3)) / (3.0 * E * M_PI * pow(d_test, 4));
+        // double sigma = (32.0 * P * l_test) / (M_PI * pow(d_test, 3));
 
-        cout << "=== WERYFIKACJA WZOROW (DANE Z KONSPEKTU) ===" << endl;
-        cout << "Zadane l = " << l_test * 1000 << " mm" << endl;
-        cout << "Zadane d = " << d_test * 1000 << " mm" << endl;
-        cout << "---------------------------------------------" << endl;
-        cout << "Masa (oczekiwana: ~2.19 kg):       " << m << " kg" << endl;
-        cout << "Ugiecie (oczekiwana: ~36.22 mm):   " << u * 1000.0 << " mm" << endl;
-        cout << "Naprezenie (oczekiwana: ~651.9 MPa): " << sigma / 1e6 << " MPa" << endl;
-        cout << "---------------------------------------------" << endl;
-        lab5();
+        // cout << "=== WERYFIKACJA WZOROW (DANE Z KONSPEKTU) ===" << endl;
+        // cout << "Zadane l = " << l_test * 1000 << " mm" << endl;
+        // cout << "Zadane d = " << d_test * 1000 << " mm" << endl;
+        // cout << "---------------------------------------------" << endl;
+        // cout << "Masa (oczekiwana: ~2.19 kg):       " << m << " kg" << endl;
+        // cout << "Ugiecie (oczekiwana: ~36.22 mm):   " << u * 1000.0 << " mm" << endl;
+        // cout << "Naprezenie (oczekiwana: ~651.9 MPa): " << sigma / 1e6 << " MPa" << endl;
+        // cout << "---------------------------------------------" << endl;
+        // lab5();
+        lab6();
     }
     catch (string EX_INFO)
     {
